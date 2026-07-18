@@ -1,36 +1,200 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🚀 DevLaunch AI
 
-## Getting Started
+**Validate your startup ideas in seconds.**
 
-First, run the development server:
+DevLaunch AI is an AI-powered SaaS platform built for founders, indie hackers, and entrepreneurs. Simply enter your startup idea, and the AI generates a comprehensive validation report with market potential, strengths, weaknesses, risks, and competitor insights, helping you make informed decisions before investing time and money.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## ✨ Features
+
+- 🚀 Beautiful, conversion-focused landing page
+- 🎨 Modern UI built with Tailwind CSS
+- ✨ Smooth animations powered by Framer Motion
+- 🔐 Secure authentication with Clerk
+- 📊 Interactive pricing page with Monthly/Annual billing toggle
+- 📂 Protected dashboard with persistent sidebar navigation
+- 👤 Account settings including Profile, Billing, Notifications, and Security
+- 🌙 Fully responsive dark/light mode support
+- 📱 Responsive design across desktop, tablet, and mobile
+- ⚡ Built using the Next.js App Router architecture
+
+---
+
+## 🛠️ Tech Stack
+
+| Category        | Technology           |
+| --------------- | -------------------- |
+| Framework       | Next.js (App Router) |
+| Language        | TypeScript           |
+| Styling         | Tailwind CSS         |
+| Animations      | Framer Motion        |
+| Authentication  | Clerk                |
+| Icons           | Lucide React         |
+| Theme           | next-themes          |
+| UI Components   | shadcn/ui            |
+| Package Manager | pnpm                 |
+
+---
+
+## 📂 Project Structure
+
+```text
+app/
+│
+├── dashboard/
+│   ├── layout.tsx
+│   ├── page.tsx
+│   └── settings/
+│
+├── api/
+│   └── generate/
+│
+├── page.tsx
+├── layout.tsx
+└── globals.css
+
+components/
+├── ui/
+
+lib/
+
+public/
+
+styles/
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🚀 Getting Started
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 1. Clone the Repository
 
-## Learn More
+```bash
+git clone https://github.com/Gtanvi5/devLaunch-ai.git
+cd devlaunch-ai
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 2. Install Dependencies
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Using **pnpm**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+pnpm install
+```
 
-## Deploy on Vercel
+Or using npm
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm install
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Or using Yarn
+
+```bash
+yarn install
+```
+
+---
+
+### 3. Configure Environment Variables
+
+Create a `.env.local` file in the project root.
+
+```env
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_publishable_key
+CLERK_SECRET_KEY=your_secret_key
+
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+```
+
+---
+
+### 4. Start the Development Server
+
+```bash
+pnpm dev
+```
+
+Open your browser and visit:
+
+```
+http://localhost:3000
+```
+
+---
+
+## 📸 Current Features
+
+- ✅ Landing Page
+- ✅ Hero Section
+- ✅ Features Section
+- ✅ Pricing Page
+- ✅ Authentication (Clerk)
+- ✅ Protected Dashboard
+- ✅ Dashboard Sidebar
+- ✅ User Settings
+- ✅ Billing UI
+- ✅ Notification Preferences
+- ✅ Security Settings
+- ✅ Dark Mode
+- ✅ Responsive Design
+
+---
+
+## 🗺️ Roadmap
+
+### AI Features
+
+- [ ] AI startup validation engine
+- [ ] Startup scoring system
+- [ ] Competitor analysis
+- [ ] SWOT analysis generation
+- [ ] Business recommendations
+
+### Backend
+
+- [ ] OpenAI/Gemini integration
+- [ ] PostgreSQL database
+- [ ] Prisma ORM
+- [ ] Save validation history
+- [ ] User report management
+
+### Payments
+
+- [ ] Stripe Checkout
+- [ ] Subscription management
+- [ ] Credit-based usage
+- [ ] Billing portal
+
+### Security
+
+- [ ] Next.js middleware protection
+- [ ] Route authorization
+- [ ] Rate limiting
+- [ ] API security improvements
+
+### Dashboard
+
+- [ ] Report history
+- [ ] Export reports as PDF
+- [ ] Saved startup ideas
+- [ ] Analytics dashboard
+
+---
+
+## 🎯 Future Improvements
+
+- AI-powered pitch deck generation
+- Business model canvas generation
+- Investor readiness score
+- Market trend analysis
+- API access
+- Email notifications
+
+---
+
+## 👨‍💻 Author
+
+Built with ❤️ using **Next.js**, **Tailwind CSS**, **Framer Motion**, and **Clerk**.
