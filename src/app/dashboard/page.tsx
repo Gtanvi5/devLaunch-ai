@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus,
@@ -11,39 +11,23 @@ import {
   Sparkles,
   Sliders,
   Globe,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import ReportLoadingState from "@/components/ReportLoadingState";
 import GeneratedReport from "@/components/GeneratedReport";
 
-const INITIAL_REPORTS = [
-  {
-    id: "1",
-    name: "AI CRM for Landscapers",
-    date: "July 12, 2026",
-    score: 84,
-    status: "Completed",
-  },
-  {
-    id: "2",
-    name: "No-Code API Builder",
-    date: "June 28, 2026",
-    score: 91,
-    status: "Completed",
-  },
-  {
-    id: "3",
-    name: "Local Dog Walker Aggregator",
-    date: "June 14, 2026",
-    score: 42,
-    status: "Completed",
-  },
-];
+// Define the shape of our database record
+type ReportSection = Record<string, unknown> | null;
 
-type ReportData = {
-  score?: number;
-  [key: string]: unknown;
+type DatabaseReport = {
+  id: string;
+  prompt: string;
+  score: number;
+  createdAt: string;
+  executiveSummary: ReportSection;
+  marketAnalysis: ReportSection;
 };
 
 export default function DashboardPage() {
@@ -51,10 +35,30 @@ export default function DashboardPage() {
   const [ideaPrompt, setIdeaPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isReportReady, setIsReportReady] = useState(false);
-  const [reportData, setReportData] = useState<ReportData | null>(null);
+  const [reportData, setReportData] = useState<DatabaseReport | null>(null);
 
-  // Data State
-  const [reports, setReports] = useState(INITIAL_REPORTS);
+  // Database Data State
+  const [reports, setReports] = useState<DatabaseReport[]>([]);
+  const [isLoadingReports, setIsLoadingReports] = useState(true);
+
+  // Fetch past reports on component mount
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        const res = await fetch("/api/reports");
+        if (res.ok) {
+          const data = await res.json();
+          setReports(data.reports);
+        }
+      } catch (error) {
+        console.error("Failed to load reports", error);
+      } finally {
+        setIsLoadingReports(false);
+      }
+    };
+
+    fetchReports();
+  }, []);
 
   const handleGenerate = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -74,6 +78,7 @@ export default function DashboardPage() {
       if (!response.ok) throw new Error("API request failed");
       const data = await response.json();
 
+      // data.report is now the complete database record returned from Prisma
       setReportData(data.report);
     } catch (error) {
       console.error("Failed to fetch report:", error);
@@ -85,19 +90,8 @@ export default function DashboardPage() {
     if (reportData) {
       setIsGenerating(false);
       setIsReportReady(true);
-
-      const newReport = {
-        id: Math.random().toString(36).substring(2, 9),
-        name: ideaPrompt.split(" ").slice(0, 4).join(" ") + "...",
-        date: new Date().toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }),
-        score: reportData.score || 85,
-        status: "Completed",
-      };
-      setReports([newReport, ...reports]);
+      // Immediately add the newly generated database record to the top of our list
+      setReports([reportData, ...reports]);
     }
   };
 
@@ -173,7 +167,7 @@ export default function DashboardPage() {
                 {/* Welcome Announcement Card */}
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white mb-1">
-                    Welcome back, John
+                    Welcome back
                   </h1>
                   <p className="text-sm text-zinc-500">
                     What idea are we putting to the test today?
@@ -248,54 +242,84 @@ export default function DashboardPage() {
                   </div>
 
                   <div className="grid grid-cols-1 gap-3">
-                    {reports.map((report) => (
-                      <motion.div
-                        layout
-                        key={report.id}
-                        className="bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800/80 hover:border-violet-300 dark:hover:border-violet-700/80 rounded-2xl p-4 flex items-center justify-between transition-all group cursor-pointer shadow-sm hover:shadow-md"
-                      >
-                        <div className="flex items-center gap-4 min-w-0">
-                          <div className="w-10 h-10 rounded-xl bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center shrink-0 border border-zinc-100 dark:border-zinc-700/50">
-                            <FileText className="w-5 h-5 text-zinc-400 group-hover:text-violet-500 transition-colors" />
-                          </div>
-                          <div className="min-w-0">
-                            <h4 className="text-sm font-bold truncate text-zinc-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
-                              {report.name}
-                            </h4>
-                            <div className="flex items-center gap-2 text-xs text-zinc-500 mt-0.5">
-                              <span>{report.date}</span>
-                              <span>•</span>
-                              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-500 font-medium">
-                                <CheckCircle2 className="w-3 h-3" />{" "}
-                                {report.status}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
+                    {isLoadingReports ? (
+                      <div className="flex items-center justify-center py-12 text-zinc-500">
+                        <Loader2 className="w-6 h-6 animate-spin" />
+                      </div>
+                    ) : reports.length === 0 ? (
+                      <div className="text-center py-12 text-zinc-500 text-sm border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl">
+                        No reports generated yet. Run your first analysis above!
+                      </div>
+                    ) : (
+                      reports.map((report) => {
+                        // Generate a short name from the database prompt
+                        const shortName =
+                          report.prompt.split(" ").slice(0, 5).join(" ") +
+                          "...";
 
-                        <div className="flex items-center gap-6 shrink-0">
-                          <div className="text-right hidden sm:block">
-                            <div className="text-xs text-zinc-400 font-medium">
-                              Viability Score
+                        // Format the PostgreSQL timestamp
+                        const formattedDate = new Date(
+                          report.createdAt,
+                        ).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        });
+
+                        return (
+                          <motion.div
+                            layout
+                            key={report.id}
+                            onClick={() => {
+                              setReportData(report);
+                              setIsReportReady(true);
+                            }}
+                            className="bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800/80 hover:border-violet-300 dark:hover:border-violet-700/80 rounded-2xl p-4 flex items-center justify-between transition-all group cursor-pointer shadow-sm hover:shadow-md"
+                          >
+                            <div className="flex items-center gap-4 min-w-0">
+                              <div className="w-10 h-10 rounded-xl bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center shrink-0 border border-zinc-100 dark:border-zinc-700/50">
+                                <FileText className="w-5 h-5 text-zinc-400 group-hover:text-violet-500 transition-colors" />
+                              </div>
+                              <div className="min-w-0">
+                                <h4 className="text-sm font-bold truncate text-zinc-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
+                                  {shortName}
+                                </h4>
+                                <div className="flex items-center gap-2 text-xs text-zinc-500 mt-0.5">
+                                  <span>{formattedDate}</span>
+                                  <span>•</span>
+                                  <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-500 font-medium">
+                                    <CheckCircle2 className="w-3 h-3" />{" "}
+                                    Completed
+                                  </span>
+                                </div>
+                              </div>
                             </div>
-                            <div
-                              className={`text-base font-extrabold ${
-                                report.score >= 80
-                                  ? "text-emerald-500"
-                                  : report.score >= 60
-                                    ? "text-amber-500"
-                                    : "text-red-500"
-                              }`}
-                            >
-                              {report.score}/100
+
+                            <div className="flex items-center gap-6 shrink-0">
+                              <div className="text-right hidden sm:block">
+                                <div className="text-xs text-zinc-400 font-medium">
+                                  Viability Score
+                                </div>
+                                <div
+                                  className={`text-base font-extrabold ${
+                                    report.score >= 80
+                                      ? "text-emerald-500"
+                                      : report.score >= 60
+                                        ? "text-amber-500"
+                                        : "text-red-500"
+                                  }`}
+                                >
+                                  {report.score}/100
+                                </div>
+                              </div>
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-violet-50 dark:group-hover:bg-violet-500/10 transition-colors">
+                                <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-violet-500 group-hover:translate-x-0.5 transition-all" />
+                              </div>
                             </div>
-                          </div>
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-violet-50 dark:group-hover:bg-violet-500/10 transition-colors">
-                            <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-violet-500 group-hover:translate-x-0.5 transition-all" />
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
+                          </motion.div>
+                        );
+                      })
+                    )}
                   </div>
                 </div>
               </motion.div>
