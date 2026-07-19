@@ -1,19 +1,20 @@
 // middleware.ts
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { clerkMiddleware } from "@clerk/nextjs/server";
 
-// 1. Define the routes that anyone can access without logging in
-const isPublicRoute = createRouteMatcher([
-  "/", // Landing page
-  "/pricing", // Pricing page
-  "/sign-in(.*)", // Clerk Sign-in
-  "/sign-up(.*)", // Clerk Sign-up
-  "/api/webhooks(.*)", // Future Stripe webhooks
-]);
+export default clerkMiddleware(async (auth, req) => {
+  const { pathname } = req.nextUrl;
 
-export default clerkMiddleware((auth, req) => {
+  // 1. Define the routes that anyone can access without logging in natively
+  const isPublicRoute =
+    pathname === "/" ||
+    pathname === "/pricing" ||
+    pathname.startsWith("/sign-in") ||
+    pathname.startsWith("/sign-up") ||
+    pathname.startsWith("/api/webhooks");
+
   // 2. If the user is trying to access a route that isn't public, force them to log in
-  if (!isPublicRoute(req)) {
-    auth().protect();
+  if (!isPublicRoute) {
+    await auth.protect();
   }
 });
 

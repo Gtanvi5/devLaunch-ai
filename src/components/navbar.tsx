@@ -16,12 +16,13 @@ import {
 import Magnetic from "@/components/ui/magnetic";
 import Image from "next/image";
 
+// Clean, Tier-1 SaaS Navigation Links
 const navLinks = [
   { name: "Features", path: "/#features" },
-  { name: "Sample Report", path: "/#sample-report" }, // Updated to match your Home component IDs
-  { name: "Compare", path: "/#comparison" },
-  { name: "Pricing", path: "/#pricing" },
-  { name: "FAQ", path: "/#faq" },
+  { name: "Pricing", path: "/pricing" },
+  { name: "Docs", path: "/docs" },
+  { name: "Changelog", path: "/changelog" },
+  { name: "Blog", path: "/blog" },
 ];
 
 export default function Navbar() {
@@ -50,7 +51,7 @@ export default function Navbar() {
     }
   }, [isOpen]);
 
-  // Scroll spy: Track which section is currently active on the screen
+  // Scroll spy: Track which section is currently active on the screen (for hash links)
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -60,13 +61,15 @@ export default function Navbar() {
           }
         });
       },
-      { rootMargin: "-40% 0px -60% 0px" }, // Triggers when section is roughly in the middle of screen
+      { rootMargin: "-40% 0px -60% 0px" },
     );
 
     navLinks.forEach((link) => {
-      const id = link.path.replace("/#", "");
-      const element = document.getElementById(id);
-      if (element) observer.observe(element);
+      if (link.path.startsWith("/#")) {
+        const id = link.path.replace("/#", "");
+        const element = document.getElementById(id);
+        if (element) observer.observe(element);
+      }
     });
 
     return () => observer.disconnect();
@@ -81,6 +84,7 @@ export default function Navbar() {
     e: React.MouseEvent<HTMLAnchorElement>,
     path: string,
   ) => {
+    // Only smooth scroll if we are on the homepage AND it's a hash link
     if (path.startsWith("/#") && pathname === "/") {
       e.preventDefault();
       const targetId = path.replace("/#", "");
@@ -100,8 +104,9 @@ export default function Navbar() {
     setIsOpen(false);
   };
 
-  // Determine the active path for the pill indicator to rest on
-  const currentPath = activeSection || pathname;
+  // Determine the active path for the pill indicator
+  const currentPath =
+    activeSection && pathname === "/" ? activeSection : pathname;
 
   return (
     <motion.nav
@@ -124,7 +129,7 @@ export default function Navbar() {
           <Magnetic intensity={0.1}>
             <Link
               href="/"
-              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              onClick={(e) => handleScroll(e, "/#")}
               className="flex items-center gap-2 font-bold text-xl tracking-tight text-zinc-900 dark:text-white group"
             >
               <motion.div
@@ -153,7 +158,12 @@ export default function Navbar() {
             onMouseLeave={() => setHoveredPath(null)}
           >
             {navLinks.map((link) => {
-              const isActive = currentPath === link.path;
+              // Exact match for pages, prefix match for nested routes like /blog/post-1
+              const isActive =
+                currentPath === link.path ||
+                (link.path !== "/" &&
+                  link.path !== "/#" &&
+                  pathname.startsWith(link.path));
 
               return (
                 <Link
@@ -344,7 +354,10 @@ export default function Navbar() {
                       href={link.path}
                       onClick={(e) => handleScroll(e, link.path)}
                       className={`block transition-colors ${
-                        currentPath === link.path
+                        currentPath === link.path ||
+                        (link.path !== "/" &&
+                          link.path !== "/#" &&
+                          pathname.startsWith(link.path))
                           ? "text-indigo-600 dark:text-indigo-400"
                           : "text-zinc-800 dark:text-zinc-200 hover:text-indigo-600"
                       }`}

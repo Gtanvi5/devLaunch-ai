@@ -1,10 +1,17 @@
+// prisma/schema.prisma
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "postgresql" // or whatever database you are using
+}
 
+model User {
+  id      String   @id
+  credits Int      @default(10)
+  reports Report[]
 }
 
 model Report {
@@ -15,4 +22,7 @@ model Report {
   executiveSummary Json
   marketAnalysis   Json
   createdAt        DateTime @default(now())
+
+  // This links the report to the user
+  user             User     @relation(fields: [userId], references: [id])
 }

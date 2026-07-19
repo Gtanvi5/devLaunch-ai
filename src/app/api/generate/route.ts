@@ -7,10 +7,28 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export async function POST(req: Request) {
   try {
-    // 1. Authenticate the user with Clerk
     const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // 1. Find or create the user in our database
+    let user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      user = await prisma.user.create({
+        data: { id: userId, credits: 10 },
+      });
+    }
+
+    // 2. Check if they have enough credits
+    if (user.credits <= 0) {
+      return NextResponse.json(
+        { error: "Insufficient credits. Please upgrade your plan." },
+        { status: 403 }, // 403 Forbidden
+      );
     }
 
     const body = await req.json();
@@ -23,7 +41,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // 2. Generate the report with Gemini in JSON mode
+    // 3. Generate the report
     const model = genAI.getGenerativeModel({
       model: "gemini-1.5-flash",
       systemInstruction: `You are an elite VC and startup analyst. Validate the startup idea provided by the user.
@@ -50,18 +68,23 @@ export async function POST(req: Request) {
     const result = await model.generateContent(prompt);
     const reportData = JSON.parse(result.response.text());
 
-    // 3. Save the generated report to PostgreSQL via Prisma
-    const savedReport = await prisma.report.create({
-      data: {
-        userId: userId,
-        prompt: prompt,
-        score: reportData.score,
-        executiveSummary: reportData.executiveSummary,
-        marketAnalysis: reportData.marketAnalysis,
-      },
-    });
+    // 4. Save the report AND deduct a credit in a single transaction
+    const [savedReport] = await prisma.$transaction([
+      prisma.report.create({
+        data: {
+          userId: userId,
+          prompt: prompt,
+          score: reportData.score,
+          executiveSummary: reportData.executiveSummary,
+          marketAnalysis: reportData.marketAnalysis,
+        },
+      }),
+      prisma.user.update({
+        where: { id: userId },
+        data: { credits: user.credits - 1 },
+      }),
+    ]);
 
-    // 4. Return the saved report to the frontend
     return NextResponse.json({ report: savedReport }, { status: 200 });
   } catch (error) {
     console.error("API Error:", error);

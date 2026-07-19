@@ -39,30 +39,40 @@ export default function DashboardPage() {
 
   // Database Data State
   const [reports, setReports] = useState<DatabaseReport[]>([]);
-  const [isLoadingReports, setIsLoadingReports] = useState(true);
+  const [credits, setCredits] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch past reports on component mount
+  // Fetch past reports AND user credits on component mount
   useEffect(() => {
-    const fetchReports = async () => {
+    const fetchDashboardData = async () => {
       try {
-        const res = await fetch("/api/reports");
-        if (res.ok) {
-          const data = await res.json();
-          setReports(data.reports);
+        const [reportsRes, userRes] = await Promise.all([
+          fetch("/api/reports"),
+          fetch("/api/user"),
+        ]);
+
+        if (reportsRes.ok) {
+          const reportsData = await reportsRes.json();
+          setReports(reportsData.reports);
+        }
+
+        if (userRes.ok) {
+          const userData = await userRes.json();
+          setCredits(userData.credits);
         }
       } catch (error) {
-        console.error("Failed to load reports", error);
+        console.error("Failed to load dashboard data", error);
       } finally {
-        setIsLoadingReports(false);
+        setIsLoading(false);
       }
     };
 
-    fetchReports();
+    fetchDashboardData();
   }, []);
 
   const handleGenerate = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (ideaPrompt.trim().length < 5) return;
+    if (ideaPrompt.trim().length < 5 || credits === 0) return;
 
     setIsGenerating(true);
     setIsReportReady(false);
@@ -75,11 +85,23 @@ export default function DashboardPage() {
         body: JSON.stringify({ prompt: ideaPrompt }),
       });
 
-      if (!response.ok) throw new Error("API request failed");
       const data = await response.json();
 
-      // data.report is now the complete database record returned from Prisma
+      if (!response.ok) {
+        if (response.status === 403) {
+          alert("You are out of credits. Please upgrade your plan.");
+          setIsGenerating(false);
+          return;
+        }
+        throw new Error("API request failed");
+      }
+
       setReportData(data.report);
+
+      // Optimistically update the UI to deduct a credit
+      if (credits !== null) {
+        setCredits((prev) => (prev ? prev - 1 : 0));
+      }
     } catch (error) {
       console.error("Failed to fetch report:", error);
       setIsGenerating(false);
@@ -90,7 +112,6 @@ export default function DashboardPage() {
     if (reportData) {
       setIsGenerating(false);
       setIsReportReady(true);
-      // Immediately add the newly generated database record to the top of our list
       setReports([reportData, ...reports]);
     }
   };
@@ -113,8 +134,12 @@ export default function DashboardPage() {
 
         <div className="flex items-center gap-4">
           <div className="px-3 py-1.5 rounded-full bg-white dark:bg-zinc-900 text-xs font-semibold flex items-center gap-2 border border-zinc-200 dark:border-zinc-800 shadow-sm">
-            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            8 / 10 Credits Left
+            <span
+              className={`inline-block w-2 h-2 rounded-full animate-pulse ${
+                credits && credits > 0 ? "bg-emerald-500" : "bg-red-500"
+              }`}
+            />
+            {credits !== null ? `${credits} Credits Left` : "Loading..."}
           </div>
         </div>
       </header>
@@ -191,9 +216,13 @@ export default function DashboardPage() {
                       <textarea
                         value={ideaPrompt}
                         onChange={(e) => setIdeaPrompt(e.target.value)}
-                        disabled={isGenerating}
-                        placeholder="Describe your startup concept completely (e.g., 'A real-time B2B dashboard helper tool for tracking global supply chain metrics targeting mid-market logistics managers...')"
-                        className="w-full min-h-[120px] bg-zinc-50 dark:bg-zinc-950/50 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-800 focus:border-violet-500 dark:focus:border-violet-500 focus:ring-1 focus:ring-violet-500 rounded-2xl p-4 text-sm placeholder:text-zinc-400 dark:placeholder:text-zinc-600 transition-all resize-none outline-none"
+                        disabled={isGenerating || credits === 0}
+                        placeholder={
+                          credits === 0
+                            ? "You are out of credits. Please upgrade your plan."
+                            : "Describe your startup concept completely (e.g., 'A real-time B2B dashboard...')"
+                        }
+                        className="w-full min-h-[120px] bg-zinc-50 dark:bg-zinc-950/50 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-800 focus:border-violet-500 dark:focus:border-violet-500 focus:ring-1 focus:ring-violet-500 rounded-2xl p-4 text-sm placeholder:text-zinc-400 dark:placeholder:text-zinc-600 transition-all resize-none outline-none disabled:opacity-50"
                       />
                     </div>
 
@@ -215,11 +244,15 @@ export default function DashboardPage() {
 
                       <Button
                         type="submit"
-                        disabled={ideaPrompt.trim().length < 5 || isGenerating}
+                        disabled={
+                          ideaPrompt.trim().length < 5 ||
+                          isGenerating ||
+                          credits === 0
+                        }
                         className="bg-violet-600 hover:bg-violet-500 text-white rounded-xl px-6 h-10 font-semibold text-sm shadow-md transition-all disabled:opacity-50 shrink-0"
                       >
-                        Run Analysis
-                        <Plus className="w-4 h-4 ml-2" />
+                        {credits === 0 ? "Out of Credits" : "Run Analysis"}
+                        {credits !== 0 && <Plus className="w-4 h-4 ml-2" />}
                       </Button>
                     </div>
                   </form>
@@ -242,7 +275,7 @@ export default function DashboardPage() {
                   </div>
 
                   <div className="grid grid-cols-1 gap-3">
-                    {isLoadingReports ? (
+                    {isLoading ? (
                       <div className="flex items-center justify-center py-12 text-zinc-500">
                         <Loader2 className="w-6 h-6 animate-spin" />
                       </div>
@@ -252,12 +285,9 @@ export default function DashboardPage() {
                       </div>
                     ) : (
                       reports.map((report) => {
-                        // Generate a short name from the database prompt
                         const shortName =
                           report.prompt.split(" ").slice(0, 5).join(" ") +
                           "...";
-
-                        // Format the PostgreSQL timestamp
                         const formattedDate = new Date(
                           report.createdAt,
                         ).toLocaleDateString("en-US", {

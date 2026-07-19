@@ -95,9 +95,9 @@ export default function Footer() {
             PART 2: THE FOOTER LINKS 
             ========================================= */}
         <div className="pb-12">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-12 lg:gap-8">
             {/* Brand Column */}
-            <div className="md:col-span-5 lg:col-span-4">
+            <div className="sm:col-span-2 md:col-span-12 lg:col-span-4">
               <Link
                 href="/"
                 className="flex items-center gap-2 font-medium tracking-tight text-xl text-zinc-900 dark:text-white mb-6 group w-fit"
@@ -150,10 +150,10 @@ export default function Footer() {
             </div>
 
             {/* Empty column for spacing on desktop */}
-            <div className="hidden lg:block lg:col-span-4" />
+            <div className="hidden lg:block lg:col-span-2" />
 
             {/* Product Links */}
-            <div className="md:col-span-3 lg:col-span-2">
+            <div className="md:col-span-4 lg:col-span-2">
               <h3 className="text-xs font-mono font-medium tracking-widest uppercase text-zinc-900 dark:text-white mb-6">
                 Product
               </h3>
@@ -182,16 +182,41 @@ export default function Footer() {
                     FAQ
                   </Link>
                 </li>
+              </ul>
+            </div>
+
+            {/* Resources Links (NEW) */}
+            <div className="md:col-span-4 lg:col-span-2">
+              <h3 className="text-xs font-mono font-medium tracking-widest uppercase text-zinc-900 dark:text-white mb-6">
+                Resources
+              </h3>
+              <ul className="space-y-4">
                 <li>
-                  <a
-                    href="#"
+                  <Link
+                    href="/blog"
+                    className="text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors duration-300"
+                  >
+                    Blog
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/changelog"
+                    className="text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors duration-300"
+                  >
+                    Changelog
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/affiliate"
                     className="group flex items-center gap-2 text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors duration-300"
                   >
-                    Affiliate Program
+                    Affiliates
                     <span className="px-2 py-0.5 rounded-md bg-violet-100 dark:bg-violet-500/10 text-[9px] font-mono font-semibold tracking-wider text-violet-600 dark:text-violet-400 uppercase border border-violet-200/50 dark:border-violet-500/20 transition-colors group-hover:border-violet-300 dark:group-hover:border-violet-500/40">
-                      New
+                      Earn
                     </span>
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </div>
@@ -203,36 +228,36 @@ export default function Footer() {
               </h3>
               <ul className="space-y-4">
                 <li>
-                  <a
-                    href="#"
+                  <Link
+                    href="/privacy"
                     className="text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors duration-300"
                   >
                     Privacy Policy
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a
-                    href="#"
+                  <Link
+                    href="/terms"
                     className="text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors duration-300"
                   >
                     Terms of Service
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a
-                    href="#"
+                  <Link
+                    href="/refund"
                     className="text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors duration-300"
                   >
                     Refund Policy
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a
-                    href="mailto:support@devlaunchai.com"
+                  <Link
+                    href="/contact"
                     className="text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors duration-300"
                   >
                     Contact Support
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </div>

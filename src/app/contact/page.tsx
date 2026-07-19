@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { Mail, MessageSquare, Twitter } from "lucide-react";
+import { Mail, X } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Contact Support | DevLaunch AI",
@@ -41,7 +41,7 @@ export default function Contact() {
             className="group flex flex-col items-center p-8 rounded-3xl bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-white/5 hover:border-violet-500/50 transition-colors"
           >
             <div className="w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <Twitter className="w-5 h-5 text-zinc-900 dark:text-white" />
+              <X className="w-5 h-5 text-zinc-900 dark:text-white" />
             </div>
             <h3 className="text-lg font-medium text-zinc-900 dark:text-white mb-2">
               X / Twitter
