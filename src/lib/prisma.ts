@@ -1,20 +1,25 @@
-// lib/prisma.ts
 import { PrismaClient } from "@prisma/client";
-import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 
-// 1. Setup the standard Postgres connection pool
-const connectionString = `${process.env.DATABASE_URL}`;
-const pool = new Pool({ connectionString });
+const connectionString = process.env.DATABASE_URL;
 
-// 2. Wrap it in Prisma's adapter
-const adapter = new PrismaPg(pool);
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not defined in the environment.");
+}
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
+const createPrismaClient = () => {
+  const pool = new Pool({ connectionString });
+  const adapter = new PrismaPg(pool);
+  return new PrismaClient({ adapter });
 };
 
-// 3. Pass the adapter to the client constructor
-export const prisma = globalForPrisma.prisma ?? new PrismaClient({ adapter });
+const globalForPrisma = globalThis as unknown as {
+  prisma: ReturnType<typeof createPrismaClient> | undefined;
+};
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+export const prisma = globalForPrisma.prisma ?? createPrismaClient();
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+}

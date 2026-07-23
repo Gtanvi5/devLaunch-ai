@@ -1,28 +1,101 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql" // or whatever database you are using
+  provider = "postgresql"
+}
+
+enum PlanType {
+  FREE
+  PRO
+}
+
+enum ReportStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
 }
 
 model User {
-  id      String   @id
-  credits Int      @default(10)
-  reports Report[]
+  id      String  @id
+  email   String  @unique
+  name    String?
+  credits Int     @default(10)
+
+  plan                   PlanType  @default(FREE)
+  razorpayCustomerId     String?   @unique
+  razorpaySubscriptionId String?   @unique
+  planExpiresAt          DateTime?
+  cancelAtPeriodEnd      Boolean   @default(false)
+
+  affiliateCode        String? @unique @default(cuid())
+  referredById         String?
+  referredBy           User?   @relation("Referrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals            User[]  @relation("Referrals")
+  totalReferralCredits Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reports      Report[]
+  transactions Transaction[]
 }
 
 model Report {
-  id               String   @id @default(cuid())
-  userId           String
-  prompt           String
-  score            Int
-  executiveSummary Json
-  marketAnalysis   Json
-  createdAt        DateTime @default(now())
+  id       String  @id @default(cuid())
+  userId   String
+  title    String?
+  prompt   String  @db.Text
+  isPublic Boolean @default(false)
 
-  // This links the report to the user
-  user             User     @relation(fields: [userId], references: [id])
+  status ReportStatus @default(PENDING)
+
+  score                Int?
+  executiveSummary     Json?
+  marketAnalysis       Json?
+  competitorMatrix     Json?
+  financialProjections Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([isPublic, createdAt(sort: Desc)])
+}
+
+model Transaction {
+  id           String            @id @default(cuid())
+  userId       String
+  amount       Int
+  currency     String            @default("INR")
+  creditsAdded Int
+  status       TransactionStatus @default(PENDING)
+
+  razorpayOrderId   String  @unique
+  razorpayPaymentId String? @unique
+  razorpaySignature String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

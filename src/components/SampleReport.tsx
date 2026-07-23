@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   ChevronRight,
 } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 // Subtle dot pattern for the report background
@@ -247,10 +248,13 @@ export default function SampleReport() {
                     go-to-market strategy, and SEO keywords.
                   </p>
 
-                  <Button className="h-12 px-8 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-zinc-900 font-medium rounded-full transition-all duration-300 hover:scale-105 group shadow-[0_0_40px_-10px_rgba(0,0,0,0.3)] dark:shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)]">
-                    Generate Your Report
-                    <ChevronRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </Button>
+                  {/* Updated CTA Button */}
+                  <Link href="/dashboard" className="w-full sm:w-auto">
+                    <Button className="w-full sm:w-auto h-12 px-8 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-zinc-900 font-medium rounded-full transition-all duration-300 hover:scale-105 group shadow-[0_0_40px_-10px_rgba(0,0,0,0.3)] dark:shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)]">
+                      Generate Your Report
+                      <ChevronRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </div>

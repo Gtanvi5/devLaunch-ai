@@ -1,29 +1,32 @@
-// middleware.ts
-import { clerkMiddleware } from "@clerk/nextjs/server";
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+
+// 1. Define routes that require authentication
+const isProtectedRoute = createRouteMatcher(["/dashboard(.*)", "/api(.*)"]);
+
+// 2. Define API routes that must remain public (webhooks, newsletters)
+const isPublicApiRoute = createRouteMatcher([
+  "/api/webhooks/clerk(.*)",
+  "/api/webhooks/razorpay(.*)",
+  "/api/newsletter(.*)",
+]);
 
 export default clerkMiddleware(async (auth, req) => {
-  const { pathname } = req.nextUrl;
+  // Allow public API routes to bypass protection entirely
+  if (isPublicApiRoute(req)) {
+    return;
+  }
 
-  // 1. Define the routes that anyone can access without logging in natively
-  const isPublicRoute =
-    pathname === "/" ||
-    pathname === "/pricing" ||
-    pathname.startsWith("/sign-in") ||
-    pathname.startsWith("/sign-up") ||
-    pathname.startsWith("/api/webhooks");
-
-  // 2. If the user is trying to access a route that isn't public, force them to log in
-  if (!isPublicRoute) {
+  // Protect dashboard and standard API routes
+  if (isProtectedRoute(req)) {
     await auth.protect();
   }
 });
 
-// 3. Configure the middleware matcher to run on the correct paths
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files (images, css, fonts)
+    // Skip Next.js internals and static files
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    // Always run middleware for API routes
+    // Always run for API routes
     "/(api|trpc)(.*)",
   ],
 };

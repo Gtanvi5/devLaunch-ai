@@ -1,12 +1,9 @@
 import { headers } from "next/headers";
 import crypto from "crypto";
-import { db } from "@/db";
-import { users } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(req: Request) {
   try {
-    // 1. Get the raw body as text (REQUIRED for cryptographic signature verification)
     const body = await req.text();
     const signature = (await headers()).get("x-razorpay-signature");
     const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
@@ -15,40 +12,82 @@ export async function POST(req: Request) {
       return new Response("Missing signature or secret", { status: 400 });
     }
 
-    // 2. Generate our own signature using the raw body and our secret
     const expectedSignature = crypto
       .createHmac("sha256", secret)
       .update(body)
       .digest("hex");
 
-    // 3. Compare signatures to ensure hackers didn't fake this request
-    if (expectedSignature !== signature) {
+    const expectedBuffer = Buffer.from(expectedSignature);
+    const signatureBuffer = Buffer.from(signature);
+
+    if (expectedBuffer.length !== signatureBuffer.length) {
+      return new Response("Invalid signature length", { status: 400 });
+    }
+
+    const isAuthentic = crypto.timingSafeEqual(expectedBuffer, signatureBuffer);
+
+    if (!isAuthentic) {
       return new Response("Invalid signature", { status: 400 });
     }
 
-    // 4. Parse the body now that we know it is secure
     const event = JSON.parse(body);
 
-    // 5. Handle a successful payment (Razorpay uses "order.paid")
     if (event.event === "order.paid") {
-      // Extract the userId we passed into the "notes" object during checkout
-      const userId = event.payload.order.entity.notes?.userId;
+      const orderEntity = event.payload.order.entity;
+      const paymentEntity = event.payload.payment?.entity;
+
+      const userId = orderEntity.notes?.userId;
+      const orderId = orderEntity.id;
+      const paymentId = paymentEntity?.id;
 
       if (userId) {
-        // 6. Securely add 10 credits to the user's account in Neon Postgres
-        await db
-          .update(users)
-          .set({ credits: sql`${users.credits} + 10` })
-          .where(eq(users.id, userId));
+        const existingTx = await prisma.transaction.findUnique({
+          where: { razorpayOrderId: orderId },
+        });
 
-        console.log(`Successfully added 10 credits to user: ${userId}`);
+        if (existingTx?.status === "SUCCESS") {
+          console.log(`Webhook already processed for order: ${orderId}`);
+          return new Response(JSON.stringify({ status: "already_processed" }), {
+            status: 200,
+          });
+        }
+
+        await prisma.$transaction([
+          prisma.user.update({
+            where: { id: userId },
+            data: { credits: { increment: 10 } },
+          }),
+
+          prisma.transaction.upsert({
+            where: { razorpayOrderId: orderId },
+            update: {
+              status: "SUCCESS",
+              razorpayPaymentId: paymentId,
+              razorpaySignature: signature,
+            },
+            create: {
+              userId: userId,
+              amount: orderEntity.amount, // Kept in paise per Razorpay standard
+              currency: orderEntity.currency,
+              creditsAdded: 10,
+              status: "SUCCESS",
+              razorpayOrderId: orderId,
+              razorpayPaymentId: paymentId,
+              razorpaySignature: signature,
+            },
+          }),
+        ]);
+
+        console.log(
+          `Successfully added 10 credits and logged transaction for user: ${userId}`,
+        );
       }
     }
 
-    // Always return 200 OK so Razorpay knows we received it
     return new Response(JSON.stringify({ status: "ok" }), { status: 200 });
   } catch (error) {
     console.error("Webhook error:", error);
+
     return new Response("Webhook execution failed", { status: 500 });
   }
 }

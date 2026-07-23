@@ -1,5 +1,6 @@
 import { Metadata } from "next";
-import { Mail, X } from "lucide-react";
+import { Mail } from "lucide-react";
+import { FaTwitter as Twitter } from "react-icons/fa6";
 
 export const metadata: Metadata = {
   title: "Contact Support | DevLaunch AI",
@@ -14,8 +15,8 @@ export default function Contact() {
           How can we help?
         </h1>
         <p className="text-lg text-zinc-500 dark:text-zinc-400 mb-12">
-          Have a question about billing, features, or your account? We're here
-          to help.
+          Have a question about billing, features, or your account? We&apos;re
+          here to help.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -35,13 +36,13 @@ export default function Contact() {
           </a>
 
           <a
-            href="https://x.com/yourusername"
+            href="https://x.com/DevLaunchAI"
             target="_blank"
             rel="noopener noreferrer"
             className="group flex flex-col items-center p-8 rounded-3xl bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-white/5 hover:border-violet-500/50 transition-colors"
           >
             <div className="w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <X className="w-5 h-5 text-zinc-900 dark:text-white" />
+              <Twitter className="w-5 h-5 text-zinc-900 dark:text-white" />
             </div>
             <h3 className="text-lg font-medium text-zinc-900 dark:text-white mb-2">
               X / Twitter

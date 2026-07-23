@@ -1,11 +1,10 @@
-// app/api/reports/route.ts
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    const { userId } = auth();
+    const { userId } = await auth();
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -14,6 +13,13 @@ export async function GET() {
     const reports = await prisma.report.findMany({
       where: {
         userId: userId,
+      },
+      select: {
+        id: true,
+        title: true,
+        score: true,
+        status: true,
+        createdAt: true,
       },
       orderBy: {
         createdAt: "desc",
@@ -24,7 +30,7 @@ export async function GET() {
   } catch (error) {
     console.error("Failed to fetch reports:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Failed to load dashboard data." },
       { status: 500 },
     );
   }

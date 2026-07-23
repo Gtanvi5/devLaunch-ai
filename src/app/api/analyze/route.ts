@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 
-// Initialize the Gemini API client
+export const maxDuration = 60;
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export async function POST(req: Request) {
@@ -13,42 +14,65 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Idea is required" }, { status: 400 });
     }
 
-    // We use Gemini 1.5 Flash - it is insanely fast and free
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    // The Prompt Engine: We explicitly demand strict JSON
-    const prompt = `
-      You are an expert venture capitalist AI. Analyze the following startup idea. 
-      Return ONLY a valid JSON object with strictly these keys. Do not include markdown formatting, backticks, or extra text: 
-      {
-        "score": (number between 0 and 100 representing market viability),
-        "marketSize": (string, realistic estimate, e.g., "$5.2B"),
-        "competitorRisk": (string: "Low", "Medium", or "High"),
-        "swot": {
-          "strengths": [3 short bullet points as strings],
-          "weaknesses": [3 short bullet points as strings],
-          "opportunities": [3 short bullet points as strings],
-          "threats": [3 short bullet points as strings]
-        }
-      }
-      
-      Idea to analyze: "${idea}"
-    `;
+    const model = genAI.getGenerativeModel({
+      model: process.env.GEMINI_MODEL || "gemini-3.6-flash",
+      systemInstruction:
+        "You are an expert venture capitalist AI. Analyze the startup idea.",
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: SchemaType.OBJECT,
+          properties: {
+            score: {
+              type: SchemaType.INTEGER,
+              description: "Market viability between 0 and 100",
+            },
+            marketSize: {
+              type: SchemaType.STRING,
+              description: "Realistic estimate, e.g., $5.2B",
+            },
+            competitorRisk: {
+              type: SchemaType.STRING,
+              format: "enum",
+              enum: ["Low", "Medium", "High"],
+            },
+            swot: {
+              type: SchemaType.OBJECT,
+              properties: {
+                strengths: {
+                  type: SchemaType.ARRAY,
+                  items: { type: SchemaType.STRING },
+                },
+                weaknesses: {
+                  type: SchemaType.ARRAY,
+                  items: { type: SchemaType.STRING },
+                },
+                opportunities: {
+                  type: SchemaType.ARRAY,
+                  items: { type: SchemaType.STRING },
+                },
+                threats: {
+                  type: SchemaType.ARRAY,
+                  items: { type: SchemaType.STRING },
+                },
+              },
+              required: ["strengths", "weaknesses", "opportunities", "threats"],
+            },
+          },
+          required: ["score", "marketSize", "competitorRisk", "swot"],
+        },
+      },
+    });
 
-    // Fetch the response from Gemini
+    const prompt = `Idea to analyze: "${idea}"`;
     const result = await model.generateContent(prompt);
     const responseText = result.response.text();
 
-    // Safety check: Clean up the response just in case the AI wraps it in markdown blocks
-    const cleanedText = responseText
-      .replace(/```json/g, "")
-      .replace(/```/g, "")
-      .trim();
+    if (!responseText) throw new Error("Empty response from AI");
 
-    // Parse the AI's text into a real JavaScript object
-    const aiData = JSON.parse(cleanedText);
+    const aiData = JSON.parse(responseText);
 
-    // Attach a random ID so the frontend can route to /dashboard/report/[id]
     aiData.id = "val_" + Math.random().toString(36).substring(7);
 
     return NextResponse.json(aiData);

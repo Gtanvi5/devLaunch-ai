@@ -16,13 +16,13 @@ import {
 import Magnetic from "@/components/ui/magnetic";
 import Image from "next/image";
 
-// Clean, Tier-1 SaaS Navigation Links
+// 🚀 Clean, Tier-1 SaaS Navigation Links
 const navLinks = [
   { name: "Features", path: "/#features" },
+  { name: "Live Demo", path: "/demo" },
+  { name: "Idea Scorer", path: "/tools/idea-scorer" },
   { name: "Pricing", path: "/pricing" },
-  { name: "Docs", path: "/docs" },
-  { name: "Changelog", path: "/changelog" },
-  { name: "Blog", path: "/blog" },
+  { name: "Glossary", path: "/glossary" },
 ];
 
 export default function Navbar() {
@@ -35,20 +35,34 @@ export default function Navbar() {
   const pathname = usePathname();
   const { isSignedIn } = useAuth();
   const { scrollY } = useScroll();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, systemTheme } = useTheme();
 
-  // Handle Hydration
+  // Handle Hydration safely
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Lock body scroll on mobile menu
+  // Lock body scroll on mobile menu & handle window resize edge-case
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = "unset";
+      document.body.style.overflow = "";
     }
+
+    const handleResize = () => {
+      // Auto-close mobile menu if screen resizes to desktop width (768px = md breakpoint)
+      if (window.innerWidth >= 768 && isOpen) {
+        setIsOpen(false);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("resize", handleResize);
+    };
   }, [isOpen]);
 
   // Scroll spy: Track which section is currently active on the screen (for hash links)
@@ -73,7 +87,7 @@ export default function Navbar() {
     });
 
     return () => observer.disconnect();
-  }, []);
+  }, [pathname]); // Re-run if path changes
 
   // Trigger shrink and glassmorphism on scroll
   useMotionValueEvent(scrollY, "change", (latest) => {
@@ -108,12 +122,20 @@ export default function Navbar() {
   const currentPath =
     activeSection && pathname === "/" ? activeSection : pathname;
 
+  // Resolve current theme for the toggle icon (safely fall back to system)
+  const currentTheme = theme === "system" ? systemTheme : theme;
+
+  // Hide Navbar completely on Dashboard
+  if (pathname.startsWith("/dashboard")) {
+    return null;
+  }
+
   return (
     <motion.nav
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      transition={{ type: "spring", stiffness: 100, damping: 20, delay: 0.2 }}
-      className={`fixed top-0 z-50 w-full transition-all duration-300 ease-out ${
+      transition={{ type: "spring", stiffness: 100, damping: 20, delay: 0.1 }}
+      className={`fixed top-0 z-50 w-full transition-colors duration-300 ease-out ${
         isScrolled
           ? "bg-white/70 dark:bg-zinc-950/70 backdrop-blur-xl border-b border-zinc-200/50 dark:border-zinc-800/50 shadow-sm"
           : "bg-transparent border-transparent"
@@ -130,7 +152,7 @@ export default function Navbar() {
             <Link
               href="/"
               onClick={(e) => handleScroll(e, "/#")}
-              className="flex items-center gap-2 font-bold text-xl tracking-tight text-zinc-900 dark:text-white group"
+              className="flex items-center gap-2 font-bold text-xl tracking-tight text-zinc-900 dark:text-white group relative z-[60] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-lg"
             >
               <motion.div
                 whileHover={{ scale: 1.05 }}
@@ -138,11 +160,20 @@ export default function Navbar() {
                 className="relative h-8 w-8"
               >
                 <Image
+                  src="/logo.png"
+                  alt="DevLaunch AI Logo"
+                  fill
+                  sizes="32px"
+                  priority
+                  className="object-contain block dark:hidden"
+                />
+                <Image
                   src="/dark-logo.png"
                   alt="DevLaunch AI Logo"
                   fill
                   sizes="32px"
-                  className="object-contain"
+                  priority
+                  className="object-contain hidden dark:block"
                 />
               </motion.div>
               <span>
@@ -154,11 +185,10 @@ export default function Navbar() {
 
           {/* 2. Desktop Navigation with Sliding Pill */}
           <div
-            className="hidden md:flex items-center gap-1 bg-zinc-100/50 dark:bg-zinc-900/50 p-1 rounded-full border border-zinc-200/50 dark:border-zinc-800/50 backdrop-blur-md"
+            className="hidden md:flex items-center gap-1 bg-zinc-100/60 dark:bg-zinc-900/60 p-1 rounded-full border border-zinc-200/50 dark:border-zinc-800/50 backdrop-blur-md"
             onMouseLeave={() => setHoveredPath(null)}
           >
             {navLinks.map((link) => {
-              // Exact match for pages, prefix match for nested routes like /blog/post-1
               const isActive =
                 currentPath === link.path ||
                 (link.path !== "/" &&
@@ -171,7 +201,7 @@ export default function Navbar() {
                   href={link.path}
                   onClick={(e) => handleScroll(e, link.path)}
                   onMouseEnter={() => setHoveredPath(link.path)}
-                  className="relative px-4 py-1.5 text-sm font-medium transition-colors"
+                  className="relative px-4 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-full"
                 >
                   {/* Hover Background */}
                   {hoveredPath === link.path && (
@@ -181,7 +211,7 @@ export default function Navbar() {
                       transition={{
                         type: "spring",
                         bounce: 0.2,
-                        duration: 0.4,
+                        duration: 0.5,
                       }}
                     />
                   )}
@@ -193,7 +223,7 @@ export default function Navbar() {
                       transition={{
                         type: "spring",
                         bounce: 0.2,
-                        duration: 0.4,
+                        duration: 0.5,
                       }}
                     />
                   )}
@@ -213,25 +243,29 @@ export default function Navbar() {
 
           {/* 3. Desktop Actions & Glowing CTA */}
           <div className="hidden md:flex items-center gap-4">
-            {mounted && (
-              <button
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                aria-label="Toggle theme"
-                className="p-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"
-              >
-                {theme === "dark" ? (
+            <button
+              onClick={() =>
+                setTheme(currentTheme === "dark" ? "light" : "dark")
+              }
+              aria-label="Toggle theme"
+              className="p-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            >
+              {mounted ? (
+                currentTheme === "dark" ? (
                   <Sun className="h-4 w-4" />
                 ) : (
                   <Moon className="h-4 w-4" />
-                )}
-              </button>
-            )}
+                )
+              ) : (
+                <div className="h-4 w-4" />
+              )}
+            </button>
 
             {isSignedIn ? (
               <div className="flex items-center gap-4 ml-2 border-l border-zinc-200 dark:border-zinc-800 pl-4">
                 <Link
                   href="/dashboard"
-                  className="text-sm font-medium text-zinc-600 hover:text-indigo-600 dark:text-zinc-300 dark:hover:text-indigo-400 transition-colors"
+                  className="text-sm font-medium text-zinc-600 hover:text-indigo-600 dark:text-zinc-300 dark:hover:text-indigo-400 transition-colors focus-visible:outline-none focus-visible:underline"
                 >
                   Dashboard
                 </Link>
@@ -270,24 +304,31 @@ export default function Navbar() {
           </div>
 
           {/* Mobile Menu Button Trigger */}
-          <div className="flex md:hidden items-center gap-3">
-            {mounted && (
-              <button
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="p-2 text-zinc-500 dark:text-zinc-400"
-              >
-                {theme === "dark" ? (
+          <div className="flex md:hidden items-center gap-3 relative z-[60]">
+            <button
+              onClick={() =>
+                setTheme(currentTheme === "dark" ? "light" : "dark")
+              }
+              className="p-2 text-zinc-500 dark:text-zinc-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-full"
+            >
+              {mounted ? (
+                currentTheme === "dark" ? (
                   <Sun className="h-5 w-5" />
                 ) : (
                   <Moon className="h-5 w-5" />
-                )}
-              </button>
-            )}
+                )
+              ) : (
+                <div className="h-5 w-5" />
+              )}
+            </button>
+
             {isSignedIn && <UserButton />}
+
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="relative z-50 p-2 text-zinc-600 hover:text-indigo-600 dark:text-zinc-400 focus:outline-none"
-              aria-label="Toggle Menu"
+              className="p-2 text-zinc-600 hover:text-indigo-600 dark:text-zinc-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-full"
+              aria-label={isOpen ? "Close Menu" : "Open Menu"}
+              aria-expanded={isOpen}
             >
               <AnimatePresence mode="wait">
                 {isOpen ? (
@@ -325,7 +366,7 @@ export default function Navbar() {
             animate={{ height: "100dvh", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.4, ease: [0.76, 0, 0.24, 1] }}
-            className="md:hidden absolute top-0 left-0 w-full overflow-y-auto bg-white dark:bg-zinc-950 pt-24 pb-12 px-6 border-b border-zinc-200 dark:border-zinc-800 shadow-2xl"
+            className="md:hidden absolute top-0 left-0 w-full overflow-y-auto bg-white/95 dark:bg-zinc-950/95 backdrop-blur-2xl pt-24 pb-12 px-6 border-b border-zinc-200 dark:border-zinc-800 shadow-2xl z-50"
           >
             <motion.div
               initial="hidden"
@@ -333,9 +374,9 @@ export default function Navbar() {
               exit="hidden"
               variants={{
                 hidden: { opacity: 0 },
-                show: { opacity: 1, transition: { staggerChildren: 0.1 } },
+                show: { opacity: 1, transition: { staggerChildren: 0.05 } },
               }}
-              className="flex flex-col gap-6 text-2xl font-semibold tracking-tight h-full"
+              className="flex flex-col gap-6 text-2xl font-semibold tracking-tight h-full min-h-[calc(100vh-8rem)]"
             >
               <div className="flex-1 flex flex-col gap-6">
                 {navLinks.map((link) => (
@@ -346,7 +387,11 @@ export default function Navbar() {
                       show: {
                         x: 0,
                         opacity: 1,
-                        transition: { type: "spring" },
+                        transition: {
+                          type: "spring",
+                          stiffness: 300,
+                          damping: 24,
+                        },
                       },
                     }}
                   >
@@ -359,7 +404,7 @@ export default function Navbar() {
                           link.path !== "/#" &&
                           pathname.startsWith(link.path))
                           ? "text-indigo-600 dark:text-indigo-400"
-                          : "text-zinc-800 dark:text-zinc-200 hover:text-indigo-600"
+                          : "text-zinc-800 dark:text-zinc-200 hover:text-indigo-600 dark:hover:text-indigo-400"
                       }`}
                     >
                       {link.name}
@@ -373,7 +418,7 @@ export default function Navbar() {
                 className="border-zinc-200 dark:border-zinc-800 origin-left mt-auto"
               />
 
-              {!isSignedIn && (
+              {!isSignedIn ? (
                 <motion.div
                   variants={{
                     hidden: { y: 20, opacity: 0 },
@@ -384,16 +429,30 @@ export default function Navbar() {
                   <SignInButton mode="modal">
                     <Button
                       variant="outline"
-                      className="w-full h-14 text-lg rounded-full border-zinc-300 dark:border-zinc-700 bg-transparent text-zinc-900 dark:text-white"
+                      className="w-full h-14 text-lg rounded-full border-zinc-300 dark:border-zinc-700 bg-transparent text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800"
                     >
                       Log In
                     </Button>
                   </SignInButton>
                   <SignInButton mode="modal">
-                    <Button className="w-full h-14 text-lg rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/25">
+                    <Button className="w-full h-14 text-lg rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/25 border-none">
                       Start Validating
                     </Button>
                   </SignInButton>
+                </motion.div>
+              ) : (
+                <motion.div
+                  variants={{
+                    hidden: { y: 20, opacity: 0 },
+                    show: { y: 0, opacity: 1 },
+                  }}
+                  className="mt-6"
+                >
+                  <Link href="/dashboard" onClick={() => setIsOpen(false)}>
+                    <Button className="w-full h-14 text-lg rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-100 shadow-lg border-none">
+                      Go to Dashboard
+                    </Button>
+                  </Link>
                 </motion.div>
               )}
             </motion.div>

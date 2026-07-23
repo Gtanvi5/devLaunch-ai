@@ -48,7 +48,6 @@ export default function ReportLoadingState({
   useEffect(() => {
     const totalDuration = 12000; // 12 seconds total for the demo
     const updateInterval = 100;
-    const stepDuration = totalDuration / AGENT_STEPS.length;
 
     const timer = setInterval(() => {
       setProgress((prev) => {
@@ -90,24 +89,24 @@ export default function ReportLoadingState({
   }, []);
 
   return (
-    <div className="w-full max-w-3xl mx-auto rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xl overflow-hidden flex flex-col h-[500px]">
+    <div className="w-full max-w-3xl mx-auto rounded-3xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#111] shadow-xl overflow-hidden flex flex-col h-[500px]">
       {/* Header */}
-      <div className="p-6 border-b border-zinc-100 dark:border-zinc-800/50 flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-900/50">
+      <div className="p-6 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-gray-50/50 dark:bg-black/20">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center border border-violet-200 dark:border-violet-500/30">
-            <Cpu className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+          <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center border border-indigo-200 dark:border-indigo-500/30">
+            <Cpu className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
           </div>
           <div>
-            <h3 className="font-semibold text-zinc-900 dark:text-white">
+            <h3 className="font-semibold text-gray-900 dark:text-white">
               Multi-Agent Processing
             </h3>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               Please wait while we validate your idea.
             </p>
           </div>
         </div>
         <div className="text-right">
-          <div className="text-2xl font-mono font-bold text-violet-600 dark:text-violet-400">
+          <div className="text-2xl font-mono font-bold text-indigo-600 dark:text-indigo-400">
             {Math.round(progress)}%
           </div>
         </div>
@@ -116,13 +115,12 @@ export default function ReportLoadingState({
       {/* Main Content Area: Steps & Terminal */}
       <div className="flex-1 flex flex-col md:flex-row min-h-0">
         {/* Left Side: Step Tracker */}
-        <div className="flex-1 p-6 border-r border-zinc-100 dark:border-zinc-800/50 overflow-y-auto">
+        <div className="flex-1 p-6 border-r border-gray-100 dark:border-white/10 overflow-y-auto">
           <div className="space-y-6">
             {AGENT_STEPS.map((step, index) => {
               const StepIcon = step.icon;
               const isCompleted = index < currentStep;
               const isActive = index === currentStep;
-              const isUpcoming = index > currentStep;
 
               return (
                 <div key={step.id} className="flex items-start gap-4">
@@ -132,8 +130,8 @@ export default function ReportLoadingState({
                       <div
                         className={`absolute top-8 left-1/2 -translate-x-1/2 w-0.5 h-6 transition-colors duration-500 ${
                           isCompleted
-                            ? "bg-violet-500"
-                            : "bg-zinc-200 dark:bg-zinc-800"
+                            ? "bg-indigo-500"
+                            : "bg-gray-200 dark:bg-white/10"
                         }`}
                       />
                     )}
@@ -142,10 +140,10 @@ export default function ReportLoadingState({
                     <div
                       className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
                         isCompleted
-                          ? "bg-violet-500 border-violet-500 text-white"
+                          ? "bg-indigo-500 border-indigo-500 text-white"
                           : isActive
-                            ? "bg-white dark:bg-zinc-900 border-violet-500 text-violet-500 shadow-[0_0_15px_-3px_rgba(139,92,246,0.5)]"
-                            : "bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-400"
+                            ? "bg-white dark:bg-[#111] border-indigo-500 text-indigo-500 shadow-[0_0_15px_-3px_rgba(99,102,241,0.4)]"
+                            : "bg-gray-50 dark:bg-black/50 border-gray-200 dark:border-white/10 text-gray-400 dark:text-gray-500"
                       }`}
                     >
                       {isCompleted ? (
@@ -161,10 +159,10 @@ export default function ReportLoadingState({
                   <div
                     className={`pt-1.5 transition-colors duration-300 ${
                       isActive
-                        ? "text-zinc-900 dark:text-white font-medium"
+                        ? "text-gray-900 dark:text-white font-medium"
                         : isCompleted
-                          ? "text-zinc-600 dark:text-zinc-300"
-                          : "text-zinc-400 dark:text-zinc-600"
+                          ? "text-gray-600 dark:text-gray-300"
+                          : "text-gray-400 dark:text-gray-500"
                     }`}
                   >
                     {step.label}
@@ -176,10 +174,10 @@ export default function ReportLoadingState({
         </div>
 
         {/* Right Side: Terminal Output */}
-        <div className="flex-1 bg-zinc-950 p-6 flex flex-col relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-full bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 pointer-events-none mix-blend-overlay"></div>
+        <div className="flex-1 bg-black/95 dark:bg-[#0a0a0a] p-6 flex flex-col relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-full bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none mix-blend-overlay"></div>
 
-          <div className="flex items-center gap-2 mb-4 text-zinc-500 border-b border-zinc-800/50 pb-4">
+          <div className="flex items-center gap-2 mb-4 text-gray-500 border-b border-white/10 pb-4">
             <Terminal className="w-4 h-4" />
             <span className="text-xs font-mono tracking-wider uppercase">
               System Logs
@@ -193,7 +191,7 @@ export default function ReportLoadingState({
                   key={i}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="text-zinc-400"
+                  className="text-gray-400"
                 >
                   <span className="text-emerald-500 mr-2">➜</span>
                   {log}
@@ -209,7 +207,7 @@ export default function ReportLoadingState({
                     duration: 0.8,
                     ease: "linear",
                   }}
-                  className="w-2 h-4 bg-violet-500 mt-2"
+                  className="w-2 h-4 bg-indigo-500 mt-2"
                 />
               )}
             </AnimatePresence>
@@ -218,9 +216,9 @@ export default function ReportLoadingState({
       </div>
 
       {/* Bottom Progress Bar */}
-      <div className="h-1.5 w-full bg-zinc-100 dark:bg-zinc-800">
+      <div className="h-1.5 w-full bg-gray-100 dark:bg-white/5">
         <motion.div
-          className="h-full bg-gradient-to-r from-violet-600 to-indigo-500"
+          className="h-full bg-gradient-to-r from-indigo-600 to-blue-500"
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
           transition={{ ease: "linear", duration: 0.1 }}

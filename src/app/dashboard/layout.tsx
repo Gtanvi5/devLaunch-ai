@@ -30,19 +30,17 @@ export default function DashboardLayout({
 
   return (
     <div className="flex h-screen w-full bg-zinc-50 dark:bg-zinc-950 overflow-hidden font-sans">
-      {/* Dynamic Sidebar */}
       <motion.aside
         animate={{ width: isCollapsed ? "80px" : "260px" }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
         className="relative flex flex-col border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 backdrop-blur-xl shadow-sm z-20 shrink-0"
       >
-        {/* Brand Header */}
         <div className="flex h-16 items-center px-4 border-b border-zinc-200 dark:border-zinc-800/50">
           <Link
             href="/dashboard"
             className="flex items-center gap-3 overflow-hidden whitespace-nowrap"
           >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-tr from-violet-600 to-indigo-600 text-white shadow-md shadow-violet-500/20">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-linear-to-tr from-violet-600 to-indigo-600 text-white shadow-md shadow-violet-500/20">
               <Sparkles className="h-4 w-4 fill-current" />
             </div>
             {!isCollapsed && (
@@ -53,7 +51,6 @@ export default function DashboardLayout({
           </Link>
         </div>
 
-        {/* Navigation Links */}
         <nav className="flex-1 space-y-1.5 p-4">
           {sidebarLinks.map((link) => {
             const isActive = pathname === link.path;
@@ -95,7 +92,6 @@ export default function DashboardLayout({
           })}
         </nav>
 
-        {/* User Profile Footer */}
         <div className="border-t border-zinc-200 dark:border-zinc-800/50 p-4 flex items-center justify-between">
           <div className="flex items-center gap-3 overflow-hidden">
             <UserButton
@@ -116,7 +112,6 @@ export default function DashboardLayout({
           </div>
         </div>
 
-        {/* Collapse Toggle */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="absolute -right-3 top-20 flex h-6 w-6 items-center justify-center rounded-full border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 shadow-sm text-zinc-400 hover:text-violet-600 transition-colors z-30"
@@ -129,8 +124,7 @@ export default function DashboardLayout({
         </button>
       </motion.aside>
 
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden relative">
+      <main className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto relative">
         {children}
       </main>
     </div>
