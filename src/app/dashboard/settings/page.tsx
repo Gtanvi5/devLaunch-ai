@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { useForm } from "react-hook-form";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   User,
@@ -19,6 +20,7 @@ import {
   Key,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 const SETTINGS_TABS = [
   { id: "profile", label: "Profile", icon: User },
@@ -33,8 +35,50 @@ const MOCK_INVOICES = [
   { id: "INV-2026-06", date: "Jun 18, 2026", amount: "$49.00", status: "Paid" },
 ];
 
+// Reusable Component
+function NotificationToggle({
+  icon: Icon,
+  title,
+  description,
+  isChecked,
+  onToggle,
+  colorClass,
+}: any) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <div className="flex gap-4">
+        <div
+          className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${colorClass.bg}`}
+        >
+          <Icon className={`w-5 h-5 ${colorClass.text}`} />
+        </div>
+        <div>
+          <h4 className="text-sm font-semibold text-zinc-900 dark:text-white">
+            {title}
+          </h4>
+          <p className="text-sm text-zinc-500 mt-1">{description}</p>
+        </div>
+      </div>
+      <button
+        onClick={onToggle}
+        role="switch"
+        aria-checked={isChecked}
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+          isChecked ? "bg-violet-600" : "bg-zinc-200 dark:bg-zinc-700"
+        }`}
+      >
+        <span
+          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+            isChecked ? "translate-x-6" : "translate-x-1"
+          }`}
+        />
+      </button>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState("profile"); // Changed default to profile
+  const [activeTab, setActiveTab] = useState("profile");
 
   return (
     <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
@@ -49,7 +93,6 @@ export default function SettingsPage() {
         </header>
 
         <div className="flex flex-col md:flex-row gap-8">
-          {/* Settings Sidebar */}
           <aside className="w-full md:w-64 shrink-0">
             <nav className="flex md:flex-col gap-2 overflow-x-auto md:overflow-visible pb-2 md:pb-0 hide-scrollbar">
               {SETTINGS_TABS.map((tab) => {
@@ -79,7 +122,6 @@ export default function SettingsPage() {
             </nav>
           </aside>
 
-          {/* Settings Content Area */}
           <main className="flex-1 min-w-0 pb-12">
             <AnimatePresence mode="wait">
               <motion.div
@@ -102,94 +144,188 @@ export default function SettingsPage() {
   );
 }
 
-// --- PROFILE TAB CONTENT ---
+type ProfileFormValues = {
+  firstName: string;
+  lastName: string;
+  email: string;
+};
+
 function ProfileTab() {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<ProfileFormValues>({
+    defaultValues: {
+      firstName: "John",
+      lastName: "Doe",
+      email: "john@example.com",
+    },
+  });
+
+  const onSubmit = async (data: ProfileFormValues) => {
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      console.log("Profile data saved:", data);
+
+      toast.success("Profile updated successfully!");
+    } catch (error) {
+      toast.error("Failed to update profile. Please try again.");
+    }
+  };
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   return (
-    <div className="space-y-6">
-      <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm p-6 md:p-8">
-        <h3 className="font-bold text-lg text-zinc-900 dark:text-white mb-6">
-          Personal Information
-        </h3>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <div>
+        <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm p-6 md:p-8">
+          <h3 className="font-bold text-lg text-zinc-900 dark:text-white mb-6">
+            Personal Information
+          </h3>
+          <p className="text-sm text-gray-500 mb-8">
+            Update your profile details here.
+          </p>
 
-        {/* Avatar Section */}
-        <div className="flex items-center gap-6 mb-8">
-          <div className="relative group">
-            <div className="w-20 h-20 rounded-full bg-violet-100 dark:bg-violet-900/30 border-2 border-white dark:border-zinc-900 shadow-sm flex items-center justify-center overflow-hidden">
-              <span className="text-2xl font-bold text-violet-600 dark:text-violet-400">
-                JD
-              </span>
-            </div>
-            <button className="absolute bottom-0 right-0 p-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-full text-zinc-600 dark:text-zinc-300 shadow-sm hover:text-violet-600 transition-colors">
-              <Camera className="w-3.5 h-3.5" />
-            </button>
-          </div>
-          <div>
-            <div className="flex gap-3">
-              <Button
-                size="sm"
-                className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-100"
+          <div className="flex items-center gap-6 mb-8">
+            <div className="relative group">
+              <div className="w-20 h-20 rounded-full bg-violet-100 dark:bg-violet-900/30 border-2 border-white dark:border-zinc-900 shadow-sm flex items-center justify-center overflow-hidden">
+                <span className="text-2xl font-bold text-violet-600 dark:text-violet-400">
+                  JD
+                </span>
+              </div>
+              <button
+                type="button"
+                className="absolute bottom-0 right-0 p-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-full text-zinc-600 dark:text-zinc-300 shadow-sm hover:text-violet-600 transition-colors"
               >
-                Upload New
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-zinc-200 dark:border-zinc-700"
-              >
-                Remove
-              </Button>
+                <Camera className="w-3.5 h-3.5" />
+              </button>
             </div>
-            <p className="text-xs text-zinc-500 mt-2">
-              Recommended: Square JPG, PNG, or GIF, at least 400x400.
-            </p>
+            <div>
+              <div className="flex gap-3">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="image/png, image/jpeg, image/gif"
+                  onChange={(e) => {
+                    // Handle file selection logic here
+                    console.log(e.target.files?.[0]);
+                  }}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()} // Triggers the hidden input
+                  className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-100"
+                >
+                  Upload New
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="border-zinc-200 dark:border-zinc-700"
+                >
+                  Remove
+                </Button>
+              </div>
+              <p className="text-xs text-zinc-500 mt-2">
+                Recommended: Square JPG, PNG, or GIF, at least 400x400.
+              </p>
+            </div>
           </div>
-        </div>
 
-        {/* Form Fields */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              First Name
-            </label>
-            <input
-              type="text"
-              defaultValue="John"
-              className="w-full bg-zinc-50 dark:bg-zinc-950/50 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-800 focus:border-violet-500 focus:ring-1 focus:ring-violet-500 rounded-xl p-3 text-sm transition-all outline-none"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              Last Name
-            </label>
-            <input
-              type="text"
-              defaultValue="Doe"
-              className="w-full bg-zinc-50 dark:bg-zinc-950/50 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-800 focus:border-violet-500 focus:ring-1 focus:ring-violet-500 rounded-xl p-3 text-sm transition-all outline-none"
-            />
-          </div>
-          <div className="space-y-2 md:col-span-2">
-            <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              Email Address
-            </label>
-            <input
-              type="email"
-              defaultValue="john.doe@example.com"
-              className="w-full bg-zinc-50 dark:bg-zinc-950/50 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-800 focus:border-violet-500 focus:ring-1 focus:ring-violet-500 rounded-xl p-3 text-sm transition-all outline-none"
-            />
-          </div>
-        </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label
+                htmlFor="firstName"
+                className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+              >
+                First Name
+              </label>
+              <input
+                id="firstName"
+                type="text"
+                {...register("firstName", {
+                  required: "First name is required",
+                })}
+                className={`w-full bg-zinc-50 dark:bg-zinc-950/50 text-zinc-900 dark:text-white border ${
+                  errors.firstName
+                    ? "border-red-500"
+                    : "border-zinc-200 dark:border-zinc-800"
+                } focus:border-violet-500 focus:ring-1 focus:ring-violet-500 rounded-xl p-3 text-sm transition-all outline-none`}
+              />
+              {errors.firstName && (
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.firstName.message}
+                </p>
+              )}
+            </div>
 
-        <div className="mt-8 flex justify-end border-t border-zinc-200 dark:border-zinc-800/50 pt-6">
-          <Button className="bg-violet-600 hover:bg-violet-500 text-white rounded-xl px-6 h-10 font-semibold text-sm shadow-md transition-all">
-            Save Changes
-          </Button>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                Last Name
+              </label>
+              <input
+                type="text"
+                {...register("lastName", { required: "Last name is required" })}
+                className={`w-full bg-zinc-50 dark:bg-zinc-950/50 text-zinc-900 dark:text-white border ${
+                  errors.lastName
+                    ? "border-red-500"
+                    : "border-zinc-200 dark:border-zinc-800"
+                } focus:border-violet-500 focus:ring-1 focus:ring-violet-500 rounded-xl p-3 text-sm transition-all outline-none`}
+              />
+              {errors.lastName && (
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.lastName.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                Email Address
+              </label>
+              <input
+                type="email"
+                {...register("email", {
+                  required: "Email is required",
+                  pattern: {
+                    value: /^\S+@\S+$/i,
+                    message: "Invalid email address",
+                  },
+                })}
+                className={`w-full bg-zinc-50 dark:bg-zinc-950/50 text-zinc-900 dark:text-white border ${
+                  errors.email
+                    ? "border-red-500"
+                    : "border-zinc-200 dark:border-zinc-800"
+                } focus:border-violet-500 focus:ring-1 focus:ring-violet-500 rounded-xl p-3 text-sm transition-all outline-none`}
+              />
+              {errors.email && (
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.email.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-8 flex justify-end border-t border-zinc-200 dark:border-zinc-800/50 pt-6">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="bg-violet-600 hover:bg-violet-500 text-white rounded-xl px-6 h-10 font-semibold text-sm shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
+    </form>
   );
 }
 
-// --- BILLING TAB CONTENT ---
 function BillingTab() {
   const creditsUsed = 45;
   const creditsTotal = 100;
@@ -197,9 +333,7 @@ function BillingTab() {
 
   return (
     <div className="space-y-8">
-      {/* Current Plan Card */}
       <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden relative shadow-sm">
-        {/* Decorative background gradient */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-violet-500/10 blur-3xl rounded-full -translate-y-1/2 translate-x-1/3 pointer-events-none" />
 
         <div className="p-6 md:p-8 relative z-10">
@@ -231,7 +365,6 @@ function BillingTab() {
             </div>
           </div>
 
-          {/* Credits Usage Visualizer */}
           <div className="mt-8 p-6 rounded-2xl bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-100 dark:border-zinc-800/50">
             <div className="flex items-end justify-between mb-4">
               <div>
@@ -250,7 +383,6 @@ function BillingTab() {
               </div>
             </div>
 
-            {/* Progress Bar */}
             <div className="h-3 w-full bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
@@ -271,7 +403,6 @@ function BillingTab() {
         </div>
       </div>
 
-      {/* Features Included (Reassurance) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {[
           "100 AI Generation Credits per month",
@@ -291,7 +422,6 @@ function BillingTab() {
         ))}
       </div>
 
-      {/* Invoices Table */}
       <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm">
         <div className="p-6 border-b border-zinc-200 dark:border-zinc-800">
           <h3 className="font-bold text-lg">Billing History</h3>
@@ -340,9 +470,7 @@ function BillingTab() {
   );
 }
 
-// --- NOTIFICATIONS TAB CONTENT ---
 function NotificationsTab() {
-  // Simple state representation for demo purposes
   const [toggles, setToggles] = useState({
     marketing: true,
     reports: true,
@@ -363,7 +491,6 @@ function NotificationsTab() {
         </p>
 
         <div className="space-y-6">
-          {/* Item 1 */}
           <div className="flex items-start justify-between gap-4">
             <div className="flex gap-4">
               <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-500/10 flex items-center justify-center shrink-0">
@@ -380,6 +507,8 @@ function NotificationsTab() {
             </div>
             <button
               onClick={() => toggle("reports")}
+              role="switch"
+              aria-checked={toggles.reports}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                 toggles.reports
                   ? "bg-violet-600"
@@ -396,7 +525,6 @@ function NotificationsTab() {
 
           <hr className="border-zinc-100 dark:border-zinc-800" />
 
-          {/* Item 2 */}
           <div className="flex items-start justify-between gap-4">
             <div className="flex gap-4">
               <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/10 flex items-center justify-center shrink-0">
@@ -429,7 +557,6 @@ function NotificationsTab() {
 
           <hr className="border-zinc-100 dark:border-zinc-800" />
 
-          {/* Item 3 */}
           <div className="flex items-start justify-between gap-4">
             <div className="flex gap-4">
               <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0">
@@ -465,11 +592,9 @@ function NotificationsTab() {
   );
 }
 
-// --- SECURITY TAB CONTENT ---
 function SecurityTab() {
   return (
     <div className="space-y-6">
-      {/* Password Management */}
       <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm p-6 md:p-8">
         <div className="flex items-center gap-3 mb-6">
           <Key className="w-5 h-5 text-zinc-400" />
@@ -507,7 +632,6 @@ function SecurityTab() {
         </div>
       </div>
 
-      {/* Active Sessions */}
       <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm p-6 md:p-8">
         <h3 className="font-bold text-lg text-zinc-900 dark:text-white mb-2">
           Active Sessions
@@ -517,7 +641,6 @@ function SecurityTab() {
         </p>
 
         <div className="space-y-4">
-          {/* Current Session */}
           <div className="flex items-center justify-between p-4 rounded-xl border border-violet-200 dark:border-violet-500/30 bg-violet-50 dark:bg-violet-500/5">
             <div className="flex items-center gap-4">
               <Laptop className="w-8 h-8 text-violet-600 dark:text-violet-400 shrink-0 p-1.5 bg-white dark:bg-zinc-900 rounded-lg shadow-sm" />
@@ -535,7 +658,6 @@ function SecurityTab() {
             </span>
           </div>
 
-          {/* Other Session */}
           <div className="flex items-center justify-between p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50">
             <div className="flex items-center gap-4">
               <Smartphone className="w-8 h-8 text-zinc-500 shrink-0 p-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg" />

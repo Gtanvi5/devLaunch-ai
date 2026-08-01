@@ -6,6 +6,8 @@ export const metadata: Metadata = {
 };
 
 export default function TermsOfService() {
+  const lastUpdated = "July 24, 2026";
+
   return (
     <main className="min-h-screen bg-zinc-50 dark:bg-[#0A0A0A] pt-32 pb-24">
       <div className="mx-auto max-w-3xl px-6 lg:px-8">
@@ -14,12 +16,7 @@ export default function TermsOfService() {
             Terms of Service
           </h1>
           <p className="text-zinc-500 dark:text-zinc-400">
-            Last updated:{" "}
-            {new Date().toLocaleDateString("en-US", {
-              month: "long",
-              day: "numeric",
-              year: "numeric",
-            })}
+            Last updated: {lastUpdated}
           </p>
         </div>
 

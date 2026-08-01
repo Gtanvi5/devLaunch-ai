@@ -6,6 +6,8 @@ export const metadata: Metadata = {
 };
 
 export default function PrivacyPolicy() {
+  const lastUpdated = "July 24, 2026";
+
   return (
     <main className="min-h-screen bg-zinc-50 dark:bg-[#0A0A0A] pt-32 pb-24">
       <div className="mx-auto max-w-3xl px-6 lg:px-8">
@@ -14,16 +16,10 @@ export default function PrivacyPolicy() {
             Privacy Policy
           </h1>
           <p className="text-zinc-500 dark:text-zinc-400">
-            Last updated:{" "}
-            {new Date().toLocaleDateString("en-US", {
-              month: "long",
-              day: "numeric",
-              year: "numeric",
-            })}
+            Last updated: {lastUpdated}
           </p>
         </div>
 
-        {/* Legal Typography Wrapper */}
         <div className="prose prose-zinc dark:prose-invert max-w-none text-zinc-600 dark:text-zinc-400 space-y-8">
           <section>
             <h2 className="text-2xl font-medium tracking-tight text-zinc-900 dark:text-white mb-4">

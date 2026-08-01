@@ -1,54 +1,172 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles,
   ArrowRight,
-  Loader2,
   Crosshair,
   TrendingUp,
   AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
 
+const LOADING_STEPS = [
+  "Identifying top market players...",
+  "Plotting feature density...",
+  "Analyzing pricing models...",
+  "Generating positioning matrix...",
+];
+
+interface Competitor {
+  id: string;
+  name: string;
+  priceScore: number;
+  breadthScore: number;
+  color: string;
+}
+
+interface Opportunity {
+  priceScore: number;
+  breadthScore: number;
+  quadrantName: string;
+}
+
+function findWhiteSpace(competitors: Competitor[]): Opportunity {
+  const quadrants = [
+    { name: "Premium / Focused", x: 25, y: 75 },
+    { name: "Premium / Broad", x: 75, y: 75 },
+    { name: "Budget / Focused", x: 25, y: 25 },
+    { name: "Budget / Broad", x: 75, y: 25 },
+  ];
+
+  if (!competitors || competitors.length === 0) {
+    return {
+      priceScore: 25,
+      breadthScore: 25,
+      quadrantName: "Budget / Focused",
+    };
+  }
+
+  let maxMinDist = -1;
+  let bestQuadrant = quadrants[0];
+
+  for (const quad of quadrants) {
+    let minDist = Infinity;
+    for (const comp of competitors) {
+      const dx = quad.x - comp.breadthScore;
+      const dy = quad.y - comp.priceScore;
+      const dist = Math.hypot(dx, dy);
+      if (dist < minDist) {
+        minDist = dist;
+      }
+    }
+
+    if (minDist > maxMinDist) {
+      maxMinDist = minDist;
+      bestQuadrant = quad;
+    }
+  }
+
+  return {
+    priceScore: bestQuadrant.y,
+    breadthScore: bestQuadrant.x,
+    quadrantName: bestQuadrant.name,
+  };
+}
+
 export default function CompetitorMatrixPage() {
   const [niche, setNiche] = useState("");
-  const [status, setStatus] = useState<"idle" | "analyzing" | "result">("idle");
-  const [loadingText, setLoadingText] = useState(
-    "Scanning industry directories...",
-  );
+  const [loadingText, setLoadingText] = useState(LOADING_STEPS[0]);
+  const [status, setStatus] = useState<
+    "idle" | "analyzing" | "result" | "error"
+  >("idle");
+  const [competitors, setCompetitors] = useState<Competitor[]>([]);
+  const [opportunity, setOpportunity] = useState<Opportunity | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // Simulated AI analysis process
+  useEffect(() => {
+    if (status !== "analyzing") return;
+
+    let stepIndex = 0;
+    const interval = setInterval(() => {
+      stepIndex = (stepIndex + 1) % LOADING_STEPS.length;
+      setLoadingText(LOADING_STEPS[stepIndex]);
+    }, 1500);
+
+    const controller = new AbortController();
+    let isTimeout = false;
+
+    const fetchCompetitorData = async () => {
+      try {
+        const timeoutId = setTimeout(() => {
+          isTimeout = true;
+          controller.abort();
+        }, 10000);
+
+        const response = await fetch("/api/v1/analyze-market", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ industry: niche, region: "Global" }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new Error(`Server responded with status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        const calculatedOpportunity = findWhiteSpace(data.competitors);
+
+        setCompetitors(data.competitors);
+        setOpportunity(calculatedOpportunity);
+        setStatus("result");
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          if (err.name === "AbortError") {
+            if (isTimeout) {
+              setError("The analysis took too long. Please try again.");
+            } else {
+              return;
+            }
+          } else {
+            setError(err.message || "Failed to fetch competitor data.");
+          }
+        } else {
+          setError("Failed to fetch competitor data.");
+        }
+        setStatus("error");
+      }
+    };
+
+    fetchCompetitorData();
+
+    return () => {
+      clearInterval(interval);
+      controller.abort();
+    };
+  }, [status, niche]);
+
   const handleAnalyze = (e: React.FormEvent) => {
     e.preventDefault();
     if (!niche.trim()) return;
 
+    setLoadingText(LOADING_STEPS[0]);
     setStatus("analyzing");
+  };
 
-    const loadingSteps = [
-      "Identifying top market players...",
-      "Plotting feature density...",
-      "Analyzing pricing models...",
-      "Generating positioning matrix...",
-    ];
-
-    let step = 0;
-    const interval = setInterval(() => {
-      step++;
-      if (step < loadingSteps.length) {
-        setLoadingText(loadingSteps[step]);
-      } else {
-        clearInterval(interval);
-        setStatus("result");
-      }
-    }, 900);
+  const handleReset = () => {
+    setNiche("");
+    setStatus("idle");
+    setOpportunity(null);
   };
 
   return (
     <main className="min-h-screen bg-zinc-50 dark:bg-[#0A0A0A] pt-32 pb-24 selection:bg-violet-500/30">
       <div className="mx-auto max-w-4xl px-6 lg:px-8">
-        {/* Header */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-100 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 text-sm font-medium mb-6">
             <Crosshair className="w-4 h-4" />
@@ -63,17 +181,15 @@ export default function CompetitorMatrixPage() {
           </p>
         </div>
 
-        {/* Main Interface */}
-        <div className="relative bg-white dark:bg-zinc-900/50 rounded-3xl shadow-xl shadow-zinc-200/50 dark:shadow-black/50 border border-zinc-200 dark:border-zinc-800 overflow-hidden min-h-[500px]">
+        <div className="relative bg-white dark:bg-zinc-900/50 rounded-3xl shadow-xl shadow-zinc-200/50 dark:shadow-black/50 border border-zinc-200 dark:border-zinc-800 overflow-hidden min-h-125">
           <AnimatePresence mode="wait">
-            {/* STATE 1: IDLE / INPUT */}
             {status === "idle" && (
               <motion.div
                 key="idle"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="flex flex-col items-center justify-center p-8 md:p-16 h-full min-h-[500px]"
+                className="flex flex-col items-center justify-center p-8 md:p-16 h-full min-h-125"
               >
                 <form onSubmit={handleAnalyze} className="w-full max-w-lg">
                   <label
@@ -107,7 +223,30 @@ export default function CompetitorMatrixPage() {
               </motion.div>
             )}
 
-            {/* STATE 2: ANALYZING */}
+            {status === "error" && (
+              <motion.div
+                key="error"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="flex flex-col items-center justify-center p-8 text-center min-h-125"
+              >
+                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-500/10 text-red-500 flex items-center justify-center mb-4">
+                  <AlertCircle className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-medium text-zinc-900 dark:text-zinc-100">
+                  Analysis Failed
+                </h3>
+                <p className="text-zinc-500 text-sm mt-2 max-w-sm">{error}</p>
+                <button
+                  onClick={() => setStatus("idle")}
+                  className="mt-6 px-5 py-2.5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-medium rounded-xl text-sm hover:opacity-90 transition-opacity"
+                >
+                  Try Again
+                </button>
+              </motion.div>
+            )}
+
             {status === "analyzing" && (
               <motion.div
                 key="analyzing"
@@ -124,24 +263,25 @@ export default function CompetitorMatrixPage() {
                 <h3 className="text-xl font-medium text-zinc-900 dark:text-white mb-2">
                   Mapping the landscape...
                 </h3>
-                <p className="text-zinc-500 dark:text-zinc-400 animate-pulse">
+                <p
+                  className="text-zinc-500 dark:text-zinc-400 animate-pulse"
+                  aria-live="polite"
+                >
                   {loadingText}
                 </p>
               </motion.div>
             )}
 
-            {/* STATE 3: RESULT */}
-            {status === "result" && (
+            {status === "result" && opportunity && (
               <motion.div
                 key="result"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="p-8 md:p-12 flex flex-col lg:flex-row gap-12"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="flex flex-col lg:flex-row gap-12 p-8 md:p-12 min-h-125"
               >
-                {/* Left: The Visual Matrix */}
                 <div className="flex-1">
-                  <div className="relative aspect-square w-full max-w-[400px] mx-auto bg-zinc-50 dark:bg-zinc-950 rounded-2xl border-2 border-zinc-200 dark:border-zinc-800 p-6">
-                    {/* Axis Labels */}
+                  <div className="relative aspect-square w-full max-w-100 mx-auto bg-zinc-50 dark:bg-zinc-950 rounded-2xl border-2 border-zinc-200 dark:border-zinc-800 p-6 mt-4">
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-zinc-50 dark:bg-zinc-950 px-2 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       Premium / Enterprise
                     </div>
@@ -155,55 +295,42 @@ export default function CompetitorMatrixPage() {
                       Broad / All-in-one
                     </div>
 
-                    {/* Crosshairs */}
                     <div className="absolute inset-y-0 left-1/2 w-px bg-zinc-200 dark:bg-zinc-800" />
                     <div className="absolute inset-x-0 top-1/2 h-px bg-zinc-200 dark:bg-zinc-800" />
 
-                    {/* Competitor Nodes (Mocked for Demo) */}
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: 0.2 }}
-                      className="absolute top-1/4 right-1/4 -translate-x-1/2 -translate-y-1/2 group"
-                    >
-                      <div className="w-3 h-3 bg-red-500 rounded-full shadow-[0_0_15px_rgba(239,68,68,0.5)] cursor-pointer" />
-                      <div className="absolute top-4 left-1/2 -translate-x-1/2 w-max bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs font-medium px-2 py-1 rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
-                        Market Leader
-                      </div>
-                    </motion.div>
+                    {competitors.map((comp, index) => (
+                      <motion.div
+                        key={comp.id}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: index * 0.2 }}
+                        style={{
+                          bottom: `${comp.priceScore}%`,
+                          left: `${comp.breadthScore}%`,
+                        }}
+                        className="absolute -translate-x-1/2 -translate-y-1/2 group z-10"
+                      >
+                        <button
+                          aria-label={`View details for ${comp.name}`}
+                          className={`w-3 h-3 ${comp.color} rounded-full shadow-md focus:outline-none focus:ring-4 focus:ring-violet-500/30 transition-all`}
+                        />
+                        <div className="absolute top-4 left-1/2 -translate-x-1/2 w-max bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs font-medium px-2 py-1 rounded shadow-md opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity pointer-events-none">
+                          {comp.name}
+                        </div>
+                      </motion.div>
+                    ))}
 
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: 0.4 }}
-                      className="absolute top-[30%] left-[30%] -translate-x-1/2 -translate-y-1/2 group"
-                    >
-                      <div className="w-3 h-3 bg-blue-500 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.5)] cursor-pointer" />
-                      <div className="absolute top-4 left-1/2 -translate-x-1/2 w-max bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs font-medium px-2 py-1 rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
-                        Premium Niche
-                      </div>
-                    </motion.div>
-
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: 0.6 }}
-                      className="absolute bottom-1/4 right-[20%] -translate-x-1/2 -translate-y-1/2 group"
-                    >
-                      <div className="w-3 h-3 bg-yellow-500 rounded-full shadow-[0_0_15px_rgba(234,179,8,0.5)] cursor-pointer" />
-                      <div className="absolute top-4 left-1/2 -translate-x-1/2 w-max bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs font-medium px-2 py-1 rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
-                        Discount Mass-Market
-                      </div>
-                    </motion.div>
-
-                    {/* The "You" Indicator */}
                     <motion.div
                       initial={{ scale: 0, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: 1 }}
-                      className="absolute bottom-[35%] left-[35%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center"
+                      transition={{ delay: competitors.length * 0.2 + 0.4 }}
+                      style={{
+                        bottom: `${opportunity.priceScore}%`,
+                        left: `${opportunity.breadthScore}%`,
+                      }}
+                      className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-20"
                     >
-                      <div className="w-6 h-6 bg-violet-500 rounded-full border-4 border-violet-200 dark:border-violet-500/30 flex items-center justify-center relative z-10 shadow-[0_0_20px_rgba(139,92,246,0.8)]">
+                      <div className="w-6 h-6 bg-violet-500 rounded-full border-4 border-violet-200 dark:border-violet-500/30 flex items-center justify-center relative shadow-[0_0_20px_rgba(139,92,246,0.8)]">
                         <Sparkles className="w-3 h-3 text-white" />
                       </div>
                       <div className="absolute top-8 w-max text-xs font-bold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-500/10 px-2 py-0.5 rounded-full border border-violet-200 dark:border-violet-500/20">
@@ -213,7 +340,6 @@ export default function CompetitorMatrixPage() {
                   </div>
                 </div>
 
-                {/* Right: Insights & Lead Capture */}
                 <div className="flex-1 flex flex-col justify-center">
                   <h3 className="text-2xl font-semibold text-zinc-900 dark:text-white mb-2">
                     Opportunity found.
@@ -222,10 +348,10 @@ export default function CompetitorMatrixPage() {
                     Based on your input, the highest chance of success is
                     positioning yourself in the{" "}
                     <strong className="text-violet-600 dark:text-violet-400 font-medium">
-                      Budget / Focused
+                      {opportunity.quadrantName}
                     </strong>{" "}
-                    quadrant. The current market leaders are over-serving the
-                    enterprise space.
+                    quadrant. The current market leaders are clustered
+                    elsewhere, leaving this space open.
                   </p>
 
                   <div className="space-y-3 mb-8">
@@ -236,7 +362,8 @@ export default function CompetitorMatrixPage() {
                           Clear Differentiation
                         </span>
                         <span className="text-xs text-zinc-500">
-                          Low competition for solo-preneurs in this niche.
+                          Low competition in the {opportunity.quadrantName}{" "}
+                          sector.
                         </span>
                       </div>
                     </div>
@@ -244,17 +371,17 @@ export default function CompetitorMatrixPage() {
                       <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5" />
                       <div>
                         <span className="block text-sm font-medium text-zinc-900 dark:text-white">
-                          Feature Creep Risk
+                          Strategic Focus Needed
                         </span>
                         <span className="text-xs text-zinc-500">
-                          You must resist building enterprise features early on.
+                          Ensure your feature set strictly aligns with this
+                          quadrant.
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* THE HOOK */}
-                  <div className="bg-gradient-to-br from-violet-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg shadow-violet-500/20 relative overflow-hidden">
+                  <div className="bg-linear-to-br from-violet-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg shadow-violet-500/20 relative overflow-hidden">
                     <div className="relative z-10">
                       <h4 className="text-lg font-semibold mb-1">
                         Beat them with data.
@@ -271,16 +398,12 @@ export default function CompetitorMatrixPage() {
                         <ArrowRight className="w-4 h-4" />
                       </Link>
                     </div>
-                    {/* Decorative background element */}
                     <Crosshair className="absolute -bottom-6 -right-6 w-32 h-32 text-white opacity-10" />
                   </div>
 
                   <button
-                    onClick={() => {
-                      setNiche("");
-                      setStatus("idle");
-                    }}
-                    className="mt-4 text-center text-xs font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors"
+                    onClick={handleReset}
+                    className="mt-6 text-center text-xs font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors"
                   >
                     Analyze a different niche
                   </button>

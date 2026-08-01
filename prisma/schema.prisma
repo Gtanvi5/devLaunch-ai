@@ -46,6 +46,7 @@ model User {
 
   reports      Report[]
   transactions Transaction[]
+  apiKeys      ApiKey[]
 }
 
 model Report {
@@ -57,11 +58,10 @@ model Report {
 
   status ReportStatus @default(PENDING)
 
-  score                Int?
-  executiveSummary     Json?
-  marketAnalysis       Json?
-  competitorMatrix     Json?
-  financialProjections Json?
+  score          Int?
+  marketSize     String?
+  competitorRisk String?
+  swot           Json?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -98,4 +98,18 @@ model NewsletterSubscriber {
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ApiKey {
+  id        String    @id @default(cuid())
+  userId    String
+  name      String
+  key       String    @unique
+  prefix    String
+  createdAt DateTime  @default(now())
+  lastUsed  DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }

@@ -7,6 +7,7 @@ project-root/
 ├── public/
 │ ├── dark-logo.png
 │ └── logo.png
+│ └── fonts/
 │
 ├── src/
 │ ├── app/
@@ -22,7 +23,11 @@ project-root/
 │ │ │ └── payment.ts
 │ │ │
 │ │ ├── api/
-│ │ │ ├── analyse/
+│ │ │ ├── analyze/
+│ │ │ │ └── route.ts
+│ │ │ ├── analyze-idea/
+│ │ │ │ └── route.ts
+│ │ │ ├── analyze-opportunity/
 │ │ │ │ └── route.ts
 │ │ │ ├── generate/
 │ │ │ │ └── route.ts
@@ -61,15 +66,15 @@ project-root/
 │ │ │ │ ├── page.tsx
 │ │ │ │ └── reportview.tsx
 │ │ │ └── settings/
-│ │ │ ├── page.tsx
-│ │ │ ├── api/
 │ │ │ │ └── page.tsx
-│ │ │ ├── billing/
+│ │ │ │ ├── api/
+│ │ │ │ │ └── page.tsx
+│ │ │ │ ├── billing/
+│ │ │ │ │ └── page.tsx
+│ │ │ │ ├── profile/
+│ │ │ │ │ └── page.tsx
+│ │ │ │ └── team/
 │ │ │ │ └── page.tsx
-│ │ │ ├── profile/
-│ │ │ │ └── page.tsx
-│ │ │ └── team/
-│ │ │ └── page.tsx
 │ │ │
 │ │ ├── demo/
 │ │ │ └── page.tsx
@@ -106,29 +111,38 @@ project-root/
 │ │ └── page.tsx
 │ │
 │ ├── components/
+│ │ ├── AnalysisPage.tsx
 │ │ ├── comparison.tsx
 │ │ ├── faq.tsx
 │ │ ├── features.tsx
 │ │ ├── footer.tsx
 │ │ ├── GeneratedReport.tsx
 │ │ ├── hero.tsx
+│ │ ├── history-search.tsx
 │ │ ├── navbar.tsx
+│ │ ├── PDFDownloadButton.tsx
 │ │ ├── preloader.tsx
 │ │ ├── pricing.tsx
 │ │ ├── ReportLoadingState.tsx
+│ │ ├── ReportPDF.tsx
 │ │ ├── ReportResult.tsx
+│ │ ├── ReportSkeleton.tsx
 │ │ ├── RevenueChart.tsx
 │ │ ├── SampleReport.tsx
 │ │ ├── testimonials.tsx
 │ │ ├── theme-provider.tsx
 │ │ └── ui/
 │ │
+│ ├── data/
+│ │ ├── glossary.ts
+│ │ ├── pricing.ts
+│ │
 │ ├── lib/
-│ │ ├── openai.ts
 │ │ ├── prisma.ts
 │ │ └── utils.ts
 │ │
-│ └── proxy.ts
+│ ├── types/
+│ │ └── report.ts
 │
 ├── .env
 ├── .env.local
@@ -143,4 +157,3 @@ project-root/
 ├── prisma.config.ts
 ├── README.md
 └── tsconfig.json
-now what we do is ill share the files one by one we make it better and decides its format and after each file is checked we will see if we have to add something or remove any unnecessary file which file to send first

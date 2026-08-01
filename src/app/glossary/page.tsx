@@ -1,71 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, BookOpen, ArrowRight, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { glossaryTerms } from "@/data/glossary";
+import { Suspense } from "react";
+import { useDebouncedCallback } from "use-debounce";
 
-const glossaryTerms = [
-  {
-    term: "Total Addressable Market",
-    abbreviation: "TAM",
-    definition:
-      "The overall revenue opportunity that is available to a product or service if 100% market share was achieved. It helps founders and investors understand the absolute maximum scale of a business.",
-    pitch:
-      "Stop reading outdated industry PDFs. DevLaunch AI instantly calculates live TAM estimates based on current web data and competitor revenues.",
-  },
-  {
-    term: "Minimum Viable Product",
-    abbreviation: "MVP",
-    definition:
-      "The most stripped-down version of a product that can still be released to early adopters. The goal is to validate assumptions and collect user feedback with the least amount of development effort.",
-    pitch:
-      "Founders often overbuild. DevLaunch AI gives you a strict, scoped feature list for your MVP so you only code what actually matters.",
-  },
-  {
-    term: "Go-To-Market Strategy",
-    abbreviation: "GTM",
-    definition:
-      "An action plan that specifies how a company will reach target customers and achieve competitive advantage. It includes pricing, sales, marketing, and distribution channels.",
-    pitch:
-      "Your DevLaunch AI validation report includes a custom Day-1 GTM strategy tailored specifically to your niche and ideal customer profile.",
-  },
-  {
-    term: "Ideal Customer Profile",
-    abbreviation: "ICP",
-    definition:
-      "A categorical description of a fictitious company or user that would get the most value from your product, thus providing the fastest sales cycle and highest retention rates.",
-    pitch:
-      "DevLaunch AI maps out exact user personas, including their pain points, where they hang out online, and what messaging will convert them.",
-  },
-  {
-    term: "Product-Market Fit",
-    abbreviation: "PMF",
-    definition:
-      "The degree to which a product satisfies a strong market demand. It is the moment when users are buying, using, and telling others about the product fast enough to sustain growth.",
-    pitch:
-      "Validate demand before writing code. DevLaunch AI's viability score predicts your likelihood of finding PMF based on market saturation.",
-  },
-  {
-    term: "Customer Acquisition Cost",
-    abbreviation: "CAC",
-    definition:
-      "The total cost of sales and marketing efforts that are needed to acquire a new customer. It must be significantly lower than the Lifetime Value (LTV) of a customer for a business to survive.",
-    pitch:
-      "Knowing your competitors' ad spend is a superpower. DevLaunch AI highlights standard acquisition channels and estimated costs in your niche.",
-  },
-  {
-    term: "Moat",
-    abbreviation: null,
-    definition:
-      "A distinct competitive advantage that a company has over its competitors, allowing it to protect its market share and profitability (e.g., network effects, proprietary tech, brand).",
-    pitch:
-      "Don't get crushed by incumbents. Our AI analyzes market leaders and explicitly tells you what unique 'angle' or moat you need to carve out.",
-  },
-];
+function GlossaryContent() {
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const { replace } = useRouter();
 
-export default function GlossaryPage() {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const syncUrl = useDebouncedCallback((term: string) => {
+    const params = new URLSearchParams(searchParams);
+    if (term) {
+      params.set("q", term);
+    } else {
+      params.delete("q");
+    }
+    replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }, 300);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.key === "/" &&
+        document.activeElement?.tagName !== "INPUT" &&
+        document.activeElement?.tagName !== "TEXTAREA"
+      ) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const filteredTerms = glossaryTerms.filter(
     (item) =>
@@ -77,7 +53,6 @@ export default function GlossaryPage() {
   return (
     <main className="min-h-screen bg-zinc-50 dark:bg-[#0A0A0A] pt-32 pb-24">
       <div className="mx-auto max-w-5xl px-6 lg:px-8">
-        {/* Header Section */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-100 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 text-sm font-medium mb-6">
             <BookOpen className="w-4 h-4" />
@@ -92,25 +67,44 @@ export default function GlossaryPage() {
           </p>
         </div>
 
-        {/* Search Bar */}
-        <div className="max-w-2xl mx-auto mb-16 relative">
+        <div className="max-w-2xl mx-auto mb-16 relative group">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-zinc-400" />
+            <Search className="h-5 w-5 text-zinc-400 group-focus-within:text-violet-500 transition-colors" />
           </div>
           <input
+            ref={searchInputRef}
             type="text"
+            aria-label="Search glossary terms"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              syncUrl(e.target.value);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.currentTarget.blur();
+                setSearchQuery("");
+                syncUrl("");
+              }
+            }}
             placeholder="Search for a term (e.g., GTM, Moat)..."
-            className="w-full bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-2xl py-4 pl-12 pr-4 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500/50 shadow-sm transition-all"
+            className="w-full bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-2xl py-4 pl-12 pr-12 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500/50 shadow-sm transition-all"
           />
+          <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+            <kbd className="hidden sm:inline-flex items-center justify-center px-2 py-1 text-xs font-medium text-zinc-400 bg-zinc-100 dark:bg-zinc-800 rounded-md border border-zinc-200 dark:border-zinc-700">
+              /
+            </kbd>
+          </div>
         </div>
 
-        {/* Terms Grid */}
-        <motion.div layout className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <AnimatePresence>
+        <motion.div
+          layout
+          className="grid grid-cols-1 md:grid-cols-2 gap-6"
+          aria-live="polite"
+        >
+          <AnimatePresence mode="popLayout">
             {filteredTerms.length > 0 ? (
-              filteredTerms.map((item, idx) => (
+              filteredTerms.map((item) => (
                 <motion.div
                   layout
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -135,7 +129,6 @@ export default function GlossaryPage() {
                     {item.definition}
                   </p>
 
-                  {/* The Subtle Pitch */}
                   <div className="bg-violet-50/50 dark:bg-violet-500/5 border-l-2 border-violet-500 p-4 rounded-r-xl mt-auto">
                     <div className="flex items-center gap-2 mb-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
@@ -169,7 +162,6 @@ export default function GlossaryPage() {
           </AnimatePresence>
         </motion.div>
 
-        {/* Bottom CTA */}
         <div className="mt-20 text-center bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-10 md:p-16">
           <h2 className="text-2xl md:text-3xl font-bold text-zinc-900 dark:text-white mb-4">
             Stop learning terms. Start building.
@@ -188,5 +180,15 @@ export default function GlossaryPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function GlossaryPage() {
+  return (
+    <Suspense
+      fallback={<div className="min-h-screen bg-zinc-50 dark:bg-[#0A0A0A]" />}
+    >
+      <GlossaryContent />
+    </Suspense>
   );
 }

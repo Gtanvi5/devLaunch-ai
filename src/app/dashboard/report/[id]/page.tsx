@@ -1,20 +1,36 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect } from "react";
+import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import {
   Target,
   Zap,
   TrendingUp,
   AlertTriangle,
   ArrowLeft,
-  Download,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { ReportData, SwotAnalysis } from "@/types/report";
+import dynamic from "next/dynamic";
 
-// Mock data updated for a more personalized preview
-const reportData = {
+const FormWithPDFDownload = dynamic(
+  () => import("@/components/PDFDownloadButton"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-500 border rounded-md">
+        <Loader2 className="w-4 h-4 animate-spin" /> Loading PDF engine...
+      </div>
+    ),
+  },
+);
+
+interface ReportClientProps {
+  reportData?: ReportData;
+}
+
+const defaultReport: ReportData = {
   idea: "ScentSync AI: An adaptive olfactory operating system utilizing a wearable micro-diffusion pin and smart scent pods for wellness and identity expression.",
   score: 92,
   marketSize: "$14.2B",
@@ -40,34 +56,40 @@ const reportData = {
   },
 };
 
-// Animated Number Counter Component
 function AnimatedNumber({ value }: { value: number }) {
-  const [displayValue, setDisplayValue] = useState(0);
+  const count = useMotionValue(0);
+  const rounded = useTransform(count, (latest) => Math.round(latest));
 
   useEffect(() => {
-    let start = 0;
-    const duration = 1500; // 1.5 seconds
-    const increment = value / (duration / 16);
+    const controls = animate(count, value, {
+      duration: 1.5,
+      ease: "easeOut",
+    });
+    return () => controls.stop();
+  }, [value, count]);
 
-    const timer = setInterval(() => {
-      start += increment;
-      if (start >= value) {
-        setDisplayValue(value);
-        clearInterval(timer);
-      } else {
-        setDisplayValue(Math.floor(start));
-      }
-    }, 16);
-    return () => clearInterval(timer);
-  }, [value]);
-
-  return <span>{displayValue}</span>;
+  return (
+    <>
+      <span className="sr-only">{value}</span>
+      <motion.span aria-hidden="true">{rounded}</motion.span>
+    </>
+  );
 }
 
-export default function ReportPage() {
+export default function ReportPage({
+  reportData = defaultReport,
+}: ReportClientProps) {
+  interface SwotEntry {
+    category: keyof SwotAnalysis;
+    items: string[];
+  }
+
+  const swotEntries: SwotEntry[] = (
+    Object.entries(reportData.swot) as Array<[keyof SwotAnalysis, string[]]>
+  ).map(([category, items]) => ({ category, items }));
+
   return (
     <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6 transition-colors duration-300">
-      {/* Header Actions */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -80,15 +102,10 @@ export default function ReportPage() {
           <ArrowLeft className="w-4 h-4" />
           <span>Back to validations</span>
         </Link>
-        <Button
-          variant="outline"
-          className="gap-2 rounded-full border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-        >
-          <Download className="w-4 h-4" /> Export PDF
-        </Button>
+
+        <FormWithPDFDownload reportData={reportData} />
       </motion.div>
 
-      {/* Idea Summary */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -103,14 +120,12 @@ export default function ReportPage() {
         </div>
       </motion.div>
 
-      {/* Top Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        {/* The Big Score Card */}
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2 }}
-          className="md:col-span-1 rounded-3xl bg-gradient-to-br from-violet-600 to-blue-600 p-8 text-white shadow-xl shadow-violet-500/20 dark:shadow-violet-500/10 flex flex-col justify-between relative overflow-hidden"
+          className="md:col-span-1 rounded-3xl bg-linear-to-br from-violet-600 to-blue-600 p-8 text-white shadow-xl shadow-violet-500/20 dark:shadow-violet-500/10 flex flex-col justify-between relative overflow-hidden"
         >
           <div className="absolute top-0 right-0 p-8 opacity-10">
             <Target className="w-32 h-32" />
@@ -132,7 +147,6 @@ export default function ReportPage() {
           </div>
         </motion.div>
 
-        {/* Secondary Stats */}
         <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
           <motion.div
             initial={{ opacity: 0, x: 20 }}
@@ -166,7 +180,6 @@ export default function ReportPage() {
         </div>
       </div>
 
-      {/* SWOT Analysis Grid */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -176,16 +189,16 @@ export default function ReportPage() {
           <Zap className="w-5 h-5 text-violet-500" /> AI SWOT Analysis
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {Object.entries(reportData.swot).map(([key, items], index) => (
+          {swotEntries.map(({ category, items }) => (
             <div
-              key={key}
+              key={category}
               className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/80 p-6 shadow-sm dark:shadow-none hover:shadow-md transition-shadow"
             >
               <h4 className="text-lg font-bold capitalize mb-5 text-zinc-900 dark:text-white border-b border-zinc-100 dark:border-zinc-800 pb-2">
-                {key}
+                {category}
               </h4>
               <ul className="space-y-3.5">
-                {items.map((item, i) => (
+                {items.map((item: string, i: number) => (
                   <li
                     key={i}
                     className="flex items-start gap-3 text-zinc-600 dark:text-zinc-400 leading-relaxed"

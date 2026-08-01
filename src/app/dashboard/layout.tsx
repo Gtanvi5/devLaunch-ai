@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import { Toaster } from "sonner";
 
 const sidebarLinks = [
   { name: "New Validation", path: "/dashboard", icon: LayoutDashboard },
@@ -126,6 +127,7 @@ export default function DashboardLayout({
 
       <main className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto relative">
         {children}
+        <Toaster position="bottom-right" richColors />
       </main>
     </div>
   );

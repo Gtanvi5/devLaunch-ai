@@ -1,144 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, Fragment } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Check, Minus, Sparkles, ArrowRight } from "lucide-react";
 import Link from "next/link";
-
-const plans = [
-  {
-    name: "Starter",
-    description:
-      "Perfect for indie hackers and solo founders validating their first idea.",
-    price: {
-      monthly: 19,
-      annual: 15,
-    },
-    features: [
-      "5 Validation Reports per month",
-      "Standard AI Agents (Marketer & Dev)",
-      "Basic PDF Exports",
-      "Community Discord Support",
-    ],
-    buttonText: "Start for free",
-    buttonVariant: "outline",
-    popular: false,
-  },
-  {
-    name: "Pro",
-    description:
-      "For serious founders and teams shipping multiple products a year.",
-    price: {
-      monthly: 49,
-      annual: 39,
-    },
-    features: [
-      "Unlimited Validation Reports",
-      "Advanced Multi-Agent Engine (Investor)",
-      "Custom API Access",
-      "Priority Email Support",
-      "Custom Tech Stack Rules",
-    ],
-    buttonText: "Upgrade to Pro",
-    buttonVariant: "solid",
-    popular: true,
-  },
-  {
-    name: "Enterprise",
-    description:
-      "For incubators, VCs, and agencies needing high-volume validation.",
-    price: {
-      monthly: 199,
-      annual: 159,
-    },
-    features: [
-      "Everything in Pro",
-      "Dedicated Account Manager",
-      "Custom AI Personality Training",
-      "Automated Webhooks",
-      "99.9% Uptime SLA",
-    ],
-    buttonText: "Contact Sales",
-    buttonVariant: "outline",
-    popular: false,
-  },
-];
-
-const comparisonFeatures = [
-  {
-    category: "Core Features",
-    items: [
-      {
-        name: "Validation Reports",
-        starter: "5 / month",
-        pro: "Unlimited",
-        enterprise: "Unlimited",
-      },
-      {
-        name: "Custom Tech Stack Rules",
-        starter: false,
-        pro: true,
-        enterprise: true,
-      },
-      {
-        name: "Team Members",
-        starter: "1",
-        pro: "Up to 5",
-        enterprise: "Unlimited",
-      },
-    ],
-  },
-  {
-    category: "AI Engine",
-    items: [
-      {
-        name: "Marketer & Developer Agents",
-        starter: true,
-        pro: true,
-        enterprise: true,
-      },
-      { name: "Investor Agent", starter: false, pro: true, enterprise: true },
-      {
-        name: "Custom AI Personality",
-        starter: false,
-        pro: false,
-        enterprise: true,
-      },
-    ],
-  },
-  {
-    category: "Export & Integrations",
-    items: [
-      { name: "Basic PDF Export", starter: true, pro: true, enterprise: true },
-      {
-        name: "Advanced Pitch Deck PDF",
-        starter: false,
-        pro: true,
-        enterprise: true,
-      },
-      { name: "API Access", starter: false, pro: true, enterprise: true },
-      {
-        name: "Automated Webhooks",
-        starter: false,
-        pro: false,
-        enterprise: true,
-      },
-    ],
-  },
-  {
-    category: "Support",
-    items: [
-      { name: "Community Discord", starter: true, pro: true, enterprise: true },
-      { name: "Priority Email", starter: false, pro: true, enterprise: true },
-      {
-        name: "Dedicated Account Manager",
-        starter: false,
-        pro: false,
-        enterprise: true,
-      },
-    ],
-  },
-];
+import { plans, comparisonFeatures } from "@/data/pricing";
 
 export default function PricingPage() {
   const [isAnnual, setIsAnnual] = useState(true);
@@ -146,9 +12,15 @@ export default function PricingPage() {
   const renderValue = (val: string | boolean) => {
     if (typeof val === "boolean") {
       return val ? (
-        <Check className="w-5 h-5 text-violet-500 mx-auto" />
+        <Check
+          className="w-5 h-5 text-violet-500 mx-auto"
+          aria-label="Included"
+        />
       ) : (
-        <Minus className="w-5 h-5 text-zinc-300 dark:text-zinc-700 mx-auto" />
+        <Minus
+          className="w-5 h-5 text-zinc-300 dark:text-zinc-700 mx-auto"
+          aria-label="Not included"
+        />
       );
     }
     return (
@@ -161,7 +33,6 @@ export default function PricingPage() {
   return (
     <main className="min-h-screen bg-zinc-50 dark:bg-[#0A0A0A] pt-32 pb-24">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -177,15 +48,20 @@ export default function PricingPage() {
           </p>
         </motion.div>
 
-        {/* Billing Toggle */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.1 }}
           className="flex justify-center mb-16"
         >
-          <div className="relative flex items-center p-1 bg-zinc-200/50 dark:bg-zinc-900 rounded-full border border-zinc-200 dark:border-zinc-800">
+          <div
+            role="radiogroup"
+            aria-label="Billing frequency"
+            className="relative flex items-center p-1 bg-zinc-200/50 dark:bg-zinc-900 rounded-full border border-zinc-200 dark:border-zinc-800"
+          >
             <button
+              role="radio"
+              aria-checked={!isAnnual}
               onClick={() => setIsAnnual(false)}
               className={`relative w-32 py-2.5 text-sm font-medium rounded-full transition-colors z-10 ${
                 !isAnnual
@@ -196,6 +72,8 @@ export default function PricingPage() {
               Monthly
             </button>
             <button
+              role="radio"
+              aria-checked={isAnnual}
               onClick={() => setIsAnnual(true)}
               className={`relative w-32 py-2.5 text-sm font-medium rounded-full transition-colors z-10 ${
                 isAnnual
@@ -206,21 +84,18 @@ export default function PricingPage() {
               Annually
             </button>
 
-            {/* Sliding Pill Background */}
             <div
               className={`absolute top-1 bottom-1 w-32 bg-white dark:bg-zinc-800 rounded-full shadow-sm border border-zinc-200 dark:border-zinc-700 transition-transform duration-300 ease-in-out ${
                 isAnnual ? "translate-x-32" : "translate-x-0"
               }`}
             />
 
-            {/* Save Badge */}
             <div className="absolute -top-4 -right-8 bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-400 text-[10px] font-bold px-2 py-1 rounded-full border border-violet-200 dark:border-violet-500/30 rotate-12">
               Save 20%
             </div>
           </div>
         </motion.div>
 
-        {/* Pricing Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-32">
           {plans.map((plan, idx) => (
             <motion.div
@@ -253,19 +128,37 @@ export default function PricingPage() {
               </div>
 
               <div className="mb-8">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-white">
-                    ${isAnnual ? plan.price.annual : plan.price.monthly}
+                <div className="flex items-baseline gap-2 overflow-hidden">
+                  <span className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-white flex items-center">
+                    $
+                    <AnimatePresence mode="popLayout">
+                      <motion.span
+                        key={isAnnual ? "annual" : "monthly"}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
+                        className="inline-block"
+                      >
+                        {isAnnual ? plan.price.annual : plan.price.monthly}
+                      </motion.span>
+                    </AnimatePresence>
                   </span>
                   <span className="text-sm text-zinc-500 dark:text-zinc-400">
                     / month
                   </span>
                 </div>
                 {isAnnual && (
-                  <p className="text-sm text-violet-600 dark:text-violet-400 font-medium mt-2">
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-sm text-violet-600 dark:text-violet-400 font-medium mt-2"
+                  >
                     Billed ${plan.price.annual * 12} yearly
-                  </p>
+                  </motion.p>
                 )}
+
+                {!isAnnual && <div className="h-5 mt-2" aria-hidden="true" />}
               </div>
 
               <Link
@@ -282,7 +175,7 @@ export default function PricingPage() {
 
               <div className="flex-1">
                 <p className="text-sm font-medium text-zinc-900 dark:text-white mb-4">
-                  What's included:
+                  What&apos;s included:
                 </p>
                 <ul className="space-y-3">
                   {plan.features.map((feature, i) => (
@@ -300,7 +193,6 @@ export default function PricingPage() {
           ))}
         </div>
 
-        {/* Feature Comparison Table */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -317,7 +209,7 @@ export default function PricingPage() {
           </div>
 
           <div className="overflow-x-auto custom-scrollbar rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/20">
-            <table className="w-full text-left border-collapse min-w-[800px]">
+            <table className="w-full text-left border-collapse min-w-200">
               <thead>
                 <tr>
                   <th className="w-1/3 p-6 text-sm font-semibold text-zinc-900 dark:text-white border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
@@ -336,17 +228,17 @@ export default function PricingPage() {
               </thead>
               <tbody>
                 {comparisonFeatures.map((category, catIdx) => (
-                  <optgroup key={catIdx} className="contents">
-                    {/* Category Header */}
+                  <Fragment key={catIdx}>
                     <tr>
-                      <td
+                      <th
                         colSpan={4}
-                        className="p-4 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 bg-zinc-50/80 dark:bg-zinc-900/30 border-b border-zinc-200 dark:border-zinc-800"
+                        scope="colgroup"
+                        className="p-4 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 bg-zinc-50/80 dark:bg-zinc-900/30 border-b border-zinc-200 dark:border-zinc-800 text-left"
                       >
                         {category.category}
-                      </td>
+                      </th>
                     </tr>
-                    {/* Feature Rows */}
+
                     {category.items.map((item, itemIdx) => (
                       <tr
                         key={itemIdx}
@@ -366,7 +258,7 @@ export default function PricingPage() {
                         </td>
                       </tr>
                     ))}
-                  </optgroup>
+                  </Fragment>
                 ))}
               </tbody>
             </table>

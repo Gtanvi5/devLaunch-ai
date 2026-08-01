@@ -6,6 +6,8 @@ export const metadata: Metadata = {
 };
 
 export default function RefundPolicy() {
+  const lastUpdated = "July 24, 2026";
+
   return (
     <main className="min-h-screen bg-zinc-50 dark:bg-[#0A0A0A] pt-32 pb-24">
       <div className="mx-auto max-w-3xl px-6 lg:px-8">
@@ -13,9 +15,10 @@ export default function RefundPolicy() {
           <h1 className="text-4xl md:text-5xl font-medium tracking-tighter text-zinc-900 dark:text-white mb-4">
             Refund Policy
           </h1>
-          <p className="text-zinc-500 dark:text-zinc-400">
-            Fair and transparent billing.
-          </p>
+          <div className="text-zinc-500 dark:text-zinc-400 space-y-1">
+            <p>Fair and transparent billing.</p>
+            <p>Last updated: {lastUpdated}</p>
+          </div>
         </div>
 
         <div className="prose prose-zinc dark:prose-invert max-w-none text-zinc-600 dark:text-zinc-400 space-y-8">
