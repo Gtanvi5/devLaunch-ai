@@ -29,7 +29,10 @@ export default function DashboardPage() {
   // Sync API and Animation completion
   useEffect(() => {
     if (appState === "loading" && isApiFinished && isAnimationComplete) {
-      setAppState("result");
+      const timer = setTimeout(() => {
+        setAppState("result");
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [appState, isApiFinished, isAnimationComplete]);
 
@@ -72,12 +75,12 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-[#0a0a0a] py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center selection:bg-indigo-500/30">
       {/* High-end ambient background */}
-      <div className="fixed top-0 inset-x-0 h-[500px] bg-gradient-to-b from-indigo-50/50 via-transparent to-transparent dark:from-indigo-900/[0.03] pointer-events-none" />
+      <div className="fixed top-0 inset-x-0 h-125 bg-linear-to-b from-indigo-50/50 via-transparent to-transparent dark:from-indigo-900/[0.03] pointer-events-none" />
 
       {/* --- INPUT STATE --- */}
       {appState === "input" && (
         <div className="w-full max-w-3xl relative z-10">
-          <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-violet-500 rounded-[2.5rem] blur-xl opacity-20 dark:opacity-10" />
+          <div className="absolute -inset-1 bg-linear-to-r from-indigo-500 to-violet-500 rounded-[2.5rem] blur-xl opacity-20 dark:opacity-10" />
 
           <div className="relative bg-white dark:bg-[#111] p-8 sm:p-10 rounded-[2rem] border border-zinc-200 dark:border-white/10 shadow-xl backdrop-blur-xl">
             <div className="flex items-center gap-3 mb-6">

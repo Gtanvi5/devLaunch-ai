@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
+import { isClerkAPIResponseError } from "@clerk/nextjs/errors";
 import { useOrganization } from "@clerk/nextjs";
 import Image from "next/image";
 import {
@@ -23,8 +24,29 @@ import {
   Save,
   Check,
   UserMinus,
+  Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+
+function useOnClickOutside<T extends HTMLElement>(
+  ref: React.RefObject<T>,
+  handler: (event: MouseEvent | TouchEvent) => void,
+) {
+  useEffect(() => {
+    const listener = (event: MouseEvent | TouchEvent) => {
+      if (!ref.current || ref.current.contains(event.target as Node)) {
+        return;
+      }
+      handler(event);
+    };
+    document.addEventListener("mousedown", listener);
+    document.addEventListener("touchstart", listener);
+    return () => {
+      document.removeEventListener("mousedown", listener);
+      document.removeEventListener("touchstart", listener);
+    };
+  }, [ref, handler]);
+}
 
 const inviteSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
@@ -46,9 +68,14 @@ const formatRole = (role: string) => {
 export default function TeamSettingsPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
 
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+
+  useOnClickOutside(dropdownRef as React.RefObject<HTMLElement>, () =>
+    setActiveDropdown(null),
+  );
 
   const {
     isLoaded,
@@ -99,13 +126,12 @@ export default function TeamSettingsPage() {
       });
       toast.success(`Invitation sent to ${data.email}`);
       resetInvite();
-    } catch (error: unknown) {
-      const message =
-        typeof error === "object" && error !== null && "errors" in error
-          ? (error as { errors?: Array<{ message?: string }> }).errors?.[0]
-              ?.message
-          : undefined;
-      toast.error(message || "Failed to send invitation. Please try again.");
+    } catch (error) {
+      if (isClerkAPIResponseError(error)) {
+        toast.error(error.errors[0]?.longMessage || error.errors[0]?.message);
+      } else {
+        toast.error("Failed to send invitation. Please try again.");
+      }
     }
   };
 
@@ -114,7 +140,7 @@ export default function TeamSettingsPage() {
     try {
       await organization.update({ name: data.name });
       toast.success("Workspace name updated successfully!");
-      router.refresh(); // 3. Refresh layout UI (Sidebar/Header)
+      router.refresh();
     } catch (error) {
       toast.error("Failed to update workspace name.");
     }
@@ -128,7 +154,7 @@ export default function TeamSettingsPage() {
       setIsUploadingLogo(true);
       await organization.setLogo({ file });
       toast.success("Workspace logo updated!");
-      router.refresh(); // 4. Refresh layout UI
+      router.refresh();
     } catch (error) {
       toast.error("Failed to update logo. Please try a smaller image.");
     } finally {
@@ -137,11 +163,25 @@ export default function TeamSettingsPage() {
     }
   };
 
+  const handleRemoveLogo = async () => {
+    if (!organization) return;
+    try {
+      setIsUploadingLogo(true);
+      await organization.setLogo({ file: null });
+      toast.success("Workspace logo removed!");
+      router.refresh();
+    } catch (error) {
+      toast.error("Failed to remove logo.");
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
   const handleRevoke = async (invite: { revoke: () => Promise<unknown> }) => {
     try {
       await invite.revoke();
       toast.success("Invitation cancelled.");
-    } catch (error: unknown) {
+    } catch (error) {
       toast.error("Failed to cancel invitation.");
     }
   };
@@ -234,23 +274,33 @@ export default function TeamSettingsPage() {
                       fill
                       className="object-cover"
                     />
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isUploadingLogo}
-                      className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-100 disabled:bg-black/40"
-                    >
+
+                    <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity gap-2">
                       {isUploadingLogo ? (
                         <Loader2 className="w-6 h-6 text-white animate-spin" />
                       ) : (
-                        <>
-                          <Camera className="w-6 h-6 text-white mb-1" />
-                          <span className="text-[10px] text-white font-medium">
-                            Update
-                          </span>
-                        </>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="p-1.5 bg-white/20 hover:bg-white/30 rounded-lg backdrop-blur-sm transition-colors text-white"
+                            title="Update Logo"
+                          >
+                            <Camera className="w-4 h-4" />
+                          </button>
+                          {organization.hasImage && (
+                            <button
+                              type="button"
+                              onClick={handleRemoveLogo}
+                              className="p-1.5 bg-red-500/80 hover:bg-red-500 rounded-lg backdrop-blur-sm transition-colors text-white"
+                              title="Remove Logo"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
                       )}
-                    </button>
+                    </div>
                   </div>
                   <input
                     type="file"
@@ -394,7 +444,7 @@ export default function TeamSettingsPage() {
                   <Users className="w-5 h-5 text-zinc-600 dark:text-zinc-300" />
                 </div>
                 <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
-                  Active Members ({memberships?.data?.length || 0})
+                  Active Members
                 </h2>
               </div>
 
@@ -436,13 +486,19 @@ export default function TeamSettingsPage() {
                       </span>
 
                       {isAdmin && currentMembership?.id !== member.id && (
-                        <div className="relative">
+                        <div
+                          className="relative"
+                          ref={
+                            activeDropdown === member.id ? dropdownRef : null
+                          }
+                        >
                           <button
-                            onClick={() =>
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setActiveDropdown(
                                 activeDropdown === member.id ? null : member.id,
-                              )
-                            }
+                              );
+                            }}
                             className="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-white rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
                           >
                             <MoreVertical className="w-4 h-4" />
@@ -450,59 +506,52 @@ export default function TeamSettingsPage() {
 
                           <AnimatePresence>
                             {activeDropdown === member.id && (
-                              <>
-                                <div
-                                  className="fixed inset-0 z-40"
-                                  onClick={() => setActiveDropdown(null)}
-                                />
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                                transition={{ duration: 0.15 }}
+                                className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-lg z-50 overflow-hidden py-1"
+                              >
+                                <div className="px-3 py-2 border-b border-zinc-100 dark:border-zinc-800">
+                                  <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">
+                                    Change Role
+                                  </span>
+                                </div>
 
-                                <motion.div
-                                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                  transition={{ duration: 0.15 }}
-                                  className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-lg z-50 overflow-hidden py-1"
+                                <button
+                                  onClick={() =>
+                                    handleRoleChange(member, "org:admin")
+                                  }
+                                  className="w-full px-3 py-2 text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 flex items-center justify-between transition-colors"
                                 >
-                                  <div className="px-3 py-2 border-b border-zinc-100 dark:border-zinc-800">
-                                    <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">
-                                      Change Role
-                                    </span>
-                                  </div>
+                                  Admin
+                                  {member.role === "org:admin" && (
+                                    <Check className="w-4 h-4 text-violet-500" />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    handleRoleChange(member, "org:member")
+                                  }
+                                  className="w-full px-3 py-2 text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 flex items-center justify-between transition-colors"
+                                >
+                                  Member
+                                  {member.role === "org:member" && (
+                                    <Check className="w-4 h-4 text-violet-500" />
+                                  )}
+                                </button>
 
-                                  <button
-                                    onClick={() =>
-                                      handleRoleChange(member, "org:admin")
-                                    }
-                                    className="w-full px-3 py-2 text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 flex items-center justify-between transition-colors"
-                                  >
-                                    Admin
-                                    {member.role === "org:admin" && (
-                                      <Check className="w-4 h-4 text-violet-500" />
-                                    )}
-                                  </button>
-                                  <button
-                                    onClick={() =>
-                                      handleRoleChange(member, "org:member")
-                                    }
-                                    className="w-full px-3 py-2 text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 flex items-center justify-between transition-colors"
-                                  >
-                                    Member
-                                    {member.role === "org:member" && (
-                                      <Check className="w-4 h-4 text-violet-500" />
-                                    )}
-                                  </button>
+                                <div className="h-px bg-zinc-100 dark:bg-zinc-800 my-1" />
 
-                                  <div className="h-px bg-zinc-100 dark:bg-zinc-800 my-1" />
-
-                                  <button
-                                    onClick={() => handleRemoveMember(member)}
-                                    className="w-full px-3 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 flex items-center gap-2 transition-colors"
-                                  >
-                                    <UserMinus className="w-4 h-4" />
-                                    Remove from Team
-                                  </button>
-                                </motion.div>
-                              </>
+                                <button
+                                  onClick={() => handleRemoveMember(member)}
+                                  className="w-full px-3 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 flex items-center gap-2 transition-colors"
+                                >
+                                  <UserMinus className="w-4 h-4" />
+                                  Remove from Team
+                                </button>
+                              </motion.div>
                             )}
                           </AnimatePresence>
                         </div>
@@ -511,6 +560,21 @@ export default function TeamSettingsPage() {
                   </div>
                 ))}
               </div>
+
+              {memberships?.hasNextPage && (
+                <div className="p-4 flex justify-center border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/30 dark:bg-zinc-900/10">
+                  <button
+                    onClick={() => memberships.fetchNext()}
+                    disabled={memberships.isFetching}
+                    className="text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors flex items-center gap-2"
+                  >
+                    {memberships.isFetching && (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    )}
+                    Load More Members
+                  </button>
+                </div>
+              )}
             </div>
 
             {isAdmin && invitations?.data && invitations.data.length > 0 && (
@@ -549,6 +613,21 @@ export default function TeamSettingsPage() {
                     </div>
                   ))}
                 </div>
+
+                {invitations?.hasNextPage && (
+                  <div className="p-4 flex justify-center border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/30 dark:bg-zinc-900/10">
+                    <button
+                      onClick={() => invitations.fetchNext()}
+                      disabled={invitations.isFetching}
+                      className="text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors flex items-center gap-2"
+                    >
+                      {invitations.isFetching && (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      )}
+                      Load More Invitations
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </motion.div>

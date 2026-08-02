@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Plus,
   Search,
   ChevronRight,
   FileText,
@@ -19,7 +18,6 @@ import { Button } from "@/components/ui/button";
 import ReportLoadingState from "@/components/ReportLoadingState";
 import GeneratedReport from "@/components/GeneratedReport";
 
-// Define the shape of our database record
 type ReportSection = Record<string, unknown> | null;
 
 type DatabaseReport = {
@@ -32,22 +30,18 @@ type DatabaseReport = {
 };
 
 export default function DashboardPage() {
-  // Generation Flow State
   const [ideaPrompt, setIdeaPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isReportReady, setIsReportReady] = useState(false);
   const [reportData, setReportData] = useState<DatabaseReport | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Database Data State
   const [reports, setReports] = useState<DatabaseReport[]>([]);
   const [credits, setCredits] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Search & Filter State
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Fetch past reports AND user credits on component mount
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
@@ -75,7 +69,6 @@ export default function DashboardPage() {
     fetchDashboardData();
   }, []);
 
-  // Filter reports based on search query
   const filteredReports = useMemo(() => {
     if (!searchQuery.trim()) return reports;
     return reports.filter((report) =>
@@ -114,7 +107,6 @@ export default function DashboardPage() {
 
       setReportData(data.report);
 
-      // Optimistically update the UI to deduct a credit
       if (credits !== null) {
         setCredits((prev) => (prev ? prev - 1 : 0));
       }
@@ -132,7 +124,7 @@ export default function DashboardPage() {
       setIsGenerating(false);
       setIsReportReady(true);
       setReports((prev) => [reportData, ...prev]);
-      setIdeaPrompt(""); // Clear prompt on success
+      setIdeaPrompt("");
     }
   };
 
@@ -142,45 +134,42 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="flex flex-col h-full min-h-screen w-full bg-slate-50 dark:bg-[#0a0a0a] text-slate-900 dark:text-slate-100 font-sans selection:bg-indigo-500/30 transition-colors duration-300">
-      {/* Top Header Bar */}
-      <header className="h-16 border-b border-slate-200 dark:border-white/10 bg-white/60 dark:bg-[#0a0a0a]/60 backdrop-blur-xl px-6 md:px-8 flex items-center justify-between shrink-0 z-40 sticky top-0">
+    <div className="flex flex-col h-full w-full font-sans selection:bg-indigo-500/30 transition-colors duration-300">
+      <header className="h-16 border-b border-zinc-200 dark:border-white/10 bg-white/60 dark:bg-zinc-950/60 backdrop-blur-xl px-6 md:px-8 flex items-center justify-between shrink-0 z-40 sticky top-0">
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-600 dark:bg-indigo-500 text-white">
             <Zap className="w-4 h-4 fill-current" />
           </div>
-          <div className="text-sm font-medium flex items-center gap-2 text-slate-500 dark:text-slate-400">
+          <div className="text-sm font-medium flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
             Workspace
             <ChevronRight className="w-4 h-4 opacity-50" />
-            <span className="text-slate-900 dark:text-slate-100 font-semibold tracking-tight">
+            <span className="text-zinc-900 dark:text-zinc-100 font-semibold tracking-tight">
               Validation Engine
             </span>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="px-3 py-1.5 rounded-full bg-slate-100 dark:bg-white/5 text-xs font-medium flex items-center gap-2 border border-slate-200 dark:border-white/10 transition-all">
+          <div className="px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-white/5 text-xs font-medium flex items-center gap-2 border border-zinc-200 dark:border-white/10 transition-all">
             <span
               className={`inline-block w-2 h-2 rounded-full ${
                 credits === null
-                  ? "bg-slate-400 animate-pulse"
+                  ? "bg-zinc-400 animate-pulse"
                   : credits > 0
                     ? "bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)]"
                     : "bg-red-500"
               }`}
             />
-            <span className="text-slate-700 dark:text-slate-300">
+            <span className="text-zinc-700 dark:text-zinc-300">
               {credits !== null ? `${credits} Credits` : "Loading..."}
             </span>
           </div>
         </div>
       </header>
 
-      {/* Scrollable Content Area */}
-      <main className="flex-1 overflow-y-auto p-6 md:p-12 relative">
+      <div className="flex-1 p-6 md:p-12 relative">
         <div className="max-w-5xl w-full mx-auto h-full flex flex-col">
           <AnimatePresence mode="wait">
-            {/* STATE 1: The Final Generated Report */}
             {isReportReady && reportData && (
               <motion.div
                 key="report"
@@ -197,7 +186,6 @@ export default function DashboardPage() {
               </motion.div>
             )}
 
-            {/* STATE 2: The Multi-Agent Loading Terminal */}
             {isGenerating && !isReportReady && (
               <motion.div
                 key="loading"
@@ -211,7 +199,6 @@ export default function DashboardPage() {
               </motion.div>
             )}
 
-            {/* STATE 3: The Default Dashboard Shell */}
             {!isGenerating && !isReportReady && (
               <motion.div
                 key="dashboard"
@@ -221,20 +208,19 @@ export default function DashboardPage() {
                 transition={{ duration: 0.3 }}
                 className="space-y-12 pb-12"
               >
-                {/* Hero / Generator Block */}
                 <div className="flex flex-col gap-6">
                   <div className="space-y-2">
-                    <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900 dark:text-white">
+                    <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-zinc-900 dark:text-white">
                       Validate your next idea.
                     </h1>
-                    <p className="text-base text-slate-600 dark:text-slate-400 max-w-xl">
+                    <p className="text-base text-zinc-600 dark:text-zinc-400 max-w-xl">
                       Describe your startup concept, target market, and core
                       mechanics. Our engine will synthesize a comprehensive
                       viability report.
                     </p>
                   </div>
 
-                  <div className="bg-white dark:bg-[#111] border border-slate-200 dark:border-white/10 rounded-2xl p-2 shadow-sm transition-all focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500/50">
+                  <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-white/10 rounded-2xl p-2 shadow-sm transition-all focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500/50">
                     <form onSubmit={handleGenerate} className="flex flex-col">
                       <textarea
                         value={ideaPrompt}
@@ -248,7 +234,7 @@ export default function DashboardPage() {
                             ? "You are out of credits. Please upgrade your plan."
                             : "e.g., 'A real-time B2B dashboard that connects to Stripe and automates SaaS churn recovery...'"
                         }
-                        className="w-full min-h-[140px] bg-transparent text-slate-900 dark:text-white p-4 text-base placeholder:text-slate-400 dark:placeholder:text-slate-600 resize-none outline-none disabled:opacity-50"
+                        className="w-full min-h-35 bg-transparent text-zinc-900 dark:text-white p-4 text-base placeholder:text-zinc-400 dark:placeholder:text-zinc-600 resize-none outline-none disabled:opacity-50"
                       />
 
                       <AnimatePresence>
@@ -267,17 +253,17 @@ export default function DashboardPage() {
                         )}
                       </AnimatePresence>
 
-                      <div className="flex flex-wrap gap-4 items-center justify-between p-3 bg-slate-50/50 dark:bg-white/[0.02] border-t border-slate-100 dark:border-white/5 rounded-xl m-1">
+                      <div className="flex flex-wrap gap-4 items-center justify-between p-3 bg-zinc-50/50 dark:bg-white/2 border-t border-zinc-100 dark:border-white/5 rounded-xl m-1">
                         <div className="flex gap-2">
                           <button
                             type="button"
-                            className="px-3 py-1.5 rounded-md bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1.5 hover:text-slate-900 dark:hover:text-white transition-colors"
+                            className="px-3 py-1.5 rounded-md bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/10 text-xs font-medium text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5 hover:text-zinc-900 dark:hover:text-white transition-colors"
                           >
                             <Globe className="w-3.5 h-3.5" /> Global Market
                           </button>
                           <button
                             type="button"
-                            className="px-3 py-1.5 rounded-md bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1.5 hover:text-slate-900 dark:hover:text-white transition-colors"
+                            className="px-3 py-1.5 rounded-md bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/10 text-xs font-medium text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5 hover:text-zinc-900 dark:hover:text-white transition-colors"
                           >
                             <Sliders className="w-3.5 h-3.5" /> B2B Focus
                           </button>
@@ -290,7 +276,7 @@ export default function DashboardPage() {
                             isGenerating ||
                             credits === 0
                           }
-                          className="bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-500 dark:hover:bg-indigo-400 dark:text-slate-950 rounded-lg px-6 h-9 font-semibold text-sm transition-all disabled:opacity-50 flex items-center gap-2"
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-500 dark:hover:bg-indigo-400 dark:text-zinc-950 rounded-lg px-6 h-9 font-semibold text-sm transition-all disabled:opacity-50 flex items-center gap-2"
                         >
                           {credits === 0 ? (
                             "Out of Credits"
@@ -305,51 +291,47 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {/* Historical Runs Grid */}
                 <div className="space-y-6">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <h3 className="font-semibold text-lg text-slate-900 dark:text-white tracking-tight">
+                    <h3 className="font-semibold text-lg text-zinc-900 dark:text-white tracking-tight">
                       Recent Blueprints
                     </h3>
                     <div className="relative w-full sm:w-72">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                       <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search past validations..."
-                        className="w-full bg-white dark:bg-[#111] text-sm text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg pl-9 pr-4 py-2 transition-all shadow-sm"
+                        className="w-full bg-white dark:bg-[#111] text-sm text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/10 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg pl-9 pr-4 py-2 transition-all shadow-sm"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {isLoading ? (
-                      /* Premium Skeleton Loader */
                       Array.from({ length: 4 }).map((_, i) => (
                         <div
                           key={`skeleton-${i}`}
-                          className="bg-white dark:bg-[#111] border border-slate-200 dark:border-white/10 rounded-xl p-5 flex flex-col gap-4 animate-pulse"
+                          className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-white/10 rounded-xl p-5 flex flex-col gap-4 animate-pulse"
                         >
                           <div className="flex items-start justify-between">
-                            <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-white/5" />
-                            <div className="h-6 w-16 bg-slate-100 dark:bg-white/5 rounded-md" />
+                            <div className="w-10 h-10 rounded-lg bg-zinc-100 dark:bg-white/5" />
+                            <div className="h-6 w-16 bg-zinc-100 dark:bg-white/5 rounded-md" />
                           </div>
                           <div className="space-y-2 mt-2">
-                            <div className="h-4 w-3/4 bg-slate-100 dark:bg-white/5 rounded-md" />
-                            <div className="h-4 w-1/2 bg-slate-100 dark:bg-white/5 rounded-md" />
+                            <div className="h-4 w-3/4 bg-zinc-100 dark:bg-white/5 rounded-md" />
+                            <div className="h-4 w-1/2 bg-zinc-100 dark:bg-white/5 rounded-md" />
                           </div>
                         </div>
                       ))
                     ) : filteredReports.length === 0 ? (
-                      /* Empty State */
-                      <div className="col-span-full text-center py-16 text-slate-500 dark:text-slate-400 text-sm border border-dashed border-slate-200 dark:border-white/10 rounded-2xl bg-white/50 dark:bg-white/[0.02]">
+                      <div className="col-span-full text-center py-16 text-zinc-500 dark:text-zinc-400 text-sm border border-dashed border-zinc-200 dark:border-white/10 rounded-2xl bg-white/50 dark:bg-white/2">
                         {searchQuery
                           ? "No blueprints match your search."
                           : "Your architecture history is empty. Start your first validation above."}
                       </div>
                     ) : (
-                      /* Loaded Reports (Grid Layout) */
                       filteredReports.map((report) => {
                         const shortName =
                           report.prompt.split(" ").slice(0, 8).join(" ") +
@@ -380,12 +362,12 @@ export default function DashboardPage() {
                               setReportData(report);
                               setIsReportReady(true);
                             }}
-                            className="group bg-white dark:bg-[#111] border border-slate-200 dark:border-white/10 hover:border-indigo-500/50 dark:hover:border-indigo-500/50 rounded-xl p-5 flex flex-col justify-between cursor-pointer shadow-sm hover:shadow-md transition-all relative overflow-hidden"
+                            className="group bg-white dark:bg-[#111] border border-zinc-200 dark:border-white/10 hover:border-indigo-500/50 dark:hover:border-indigo-500/50 rounded-xl p-5 flex flex-col justify-between cursor-pointer shadow-sm hover:shadow-md transition-all relative overflow-hidden"
                           >
                             <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 dark:bg-indigo-500/10 rounded-bl-full translate-x-16 -translate-y-16 group-hover:translate-x-12 group-hover:-translate-y-12 transition-transform duration-500 ease-out" />
 
                             <div className="flex items-start justify-between mb-4 relative z-10">
-                              <div className="w-10 h-10 rounded-lg bg-slate-50 dark:bg-white/5 flex items-center justify-center border border-slate-100 dark:border-white/5 text-slate-400 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-500/10 transition-colors">
+                              <div className="w-10 h-10 rounded-lg bg-zinc-50 dark:bg-white/5 flex items-center justify-center border border-zinc-100 dark:border-white/5 text-zinc-400 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-500/10 transition-colors">
                                 <FileText className="w-5 h-5" />
                               </div>
                               <div
@@ -396,11 +378,11 @@ export default function DashboardPage() {
                             </div>
 
                             <div className="relative z-10">
-                              <h4 className="text-sm font-medium text-slate-900 dark:text-slate-100 leading-snug mb-3 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-2">
+                              <h4 className="text-sm font-medium text-zinc-900 dark:text-zinc-100 leading-snug mb-3 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-2">
                                 &quot;{shortName}&quot;
                               </h4>
 
-                              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                              <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
                                 <div className="flex items-center gap-2">
                                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                                   <span>Completed {formattedDate}</span>
@@ -421,7 +403,7 @@ export default function DashboardPage() {
             )}
           </AnimatePresence>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

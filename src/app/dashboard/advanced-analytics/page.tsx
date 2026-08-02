@@ -1,36 +1,29 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import AdvancedAnalyticsUI from "./AdvancedAnalyticsUI";
 
 export default async function AdvancedAnalyticsPage() {
-  const { orgId } = await auth();
+  const { orgId, sessionClaims } = await auth();
 
-  // 1. Kick out users who aren't in a workspace
   if (!orgId) {
     redirect("/dashboard");
   }
 
-  // 2. Fetch the active organization from Clerk
-  const client = await clerkClient();
-  const organization = await client.organizations.getOrganization({
-    organizationId: orgId,
-  });
-
-  // 3. Check the plan metadata
-  const plan = organization.publicMetadata?.plan as string | undefined;
+  const plan = sessionClaims?.org_plan as string | undefined;
   const isPro = plan === "pro" || plan === "enterprise";
 
-  // 4. Redirect if they don't have access
   if (!isPro) {
-    // Redirect them to an upgrade page with a specific error message
-    redirect("/dashboard/billing?error=upgrade_required");
+    redirect("/dashboard/billing");
   }
 
-  // 5. Render the pro content
   return (
     <main className="p-8">
       <h1 className="text-2xl font-bold">Advanced Analytics</h1>
-      <AdvancedAnalyticsUI />
+      <div className="p-4 border rounded-xl bg-zinc-50">
+        <p>
+          Welcome to the Pro tools! You can only see this if your workspace is
+          upgraded.
+        </p>
+      </div>
     </main>
   );
 }

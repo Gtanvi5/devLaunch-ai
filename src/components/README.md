@@ -29,19 +29,25 @@ project-root/
 │ │ │ │ └── route.ts
 │ │ │ ├── analyze-opportunity/
 │ │ │ │ └── route.ts
+│ │ │ ├── billing/
+│ │ │ │ └── route.ts
 │ │ │ ├── generate/
 │ │ │ │ └── route.ts
 │ │ │ ├── newsletter/
 │ │ │ │ └── route.ts
 │ │ │ ├── reports/
 │ │ │ │ └── route.ts
+│ │ │ ├── subscription/
+│ │ │ │ └── route.ts
+│ │ │ │ ├── clerk/
+│ │ │ │ └── route.ts
 │ │ │ ├── user/
 │ │ │ │ └── route.ts
 │ │ │ └── webhooks/
-│ │ │ ├── clerk/
+│ │ │ │ ├── clerk/
+│ │ │ │ │ └── route.ts
+│ │ │ │ └── razorpay/
 │ │ │ │ └── route.ts
-│ │ │ └── razorpay/
-│ │ │ └── route.ts
 │ │ │
 │ │ ├── blog/
 │ │ │ └── page.tsx
@@ -59,6 +65,8 @@ project-root/
 │ │ ├── dashboard/
 │ │ │ ├── layout.tsx
 │ │ │ ├── page.tsx
+│ │ │ ├── advanced-analytics/
+│ │ │ │ └── page.tsx
 │ │ │ ├── affiliate/
 │ │ │ │ └── page.tsx
 │ │ │ ├── report/
@@ -67,6 +75,7 @@ project-root/
 │ │ │ │ └── reportview.tsx
 │ │ │ └── settings/
 │ │ │ │ └── page.tsx
+│ │ │ │ └── layout.tsx
 │ │ │ │ ├── api/
 │ │ │ │ │ └── page.tsx
 │ │ │ │ ├── billing/
@@ -112,7 +121,10 @@ project-root/
 │ │
 │ ├── components/
 │ │ ├── AnalysisPage.tsx
+│ │ ├── ApiKeysManager.tsx
+│ │ ├── CheckoutButton.tsx
 │ │ ├── comparison.tsx
+│ │ ├── CreateWorkspaceModal.tsx
 │ │ ├── faq.tsx
 │ │ ├── features.tsx
 │ │ ├── footer.tsx
@@ -120,6 +132,7 @@ project-root/
 │ │ ├── hero.tsx
 │ │ ├── history-search.tsx
 │ │ ├── navbar.tsx
+│ │ ├── OrganizationSwitcher.tsx
 │ │ ├── PDFDownloadButton.tsx
 │ │ ├── preloader.tsx
 │ │ ├── pricing.tsx
@@ -129,6 +142,8 @@ project-root/
 │ │ ├── ReportSkeleton.tsx
 │ │ ├── RevenueChart.tsx
 │ │ ├── SampleReport.tsx
+│ │ ├── SettingsNav.tsx
+│ │ ├── Sidebar.tsx
 │ │ ├── testimonials.tsx
 │ │ ├── theme-provider.tsx
 │ │ └── ui/
@@ -139,9 +154,11 @@ project-root/
 │ │
 │ ├── lib/
 │ │ ├── prisma.ts
+│ │ └── schema.ts
 │ │ └── utils.ts
 │ │
 │ ├── types/
+│ │ └── globals.d.ts
 │ │ └── report.ts
 │
 ├── .env

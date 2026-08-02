@@ -54,7 +54,11 @@ export default function DashboardLayout({
 
         <nav className="flex-1 space-y-1.5 p-4">
           {sidebarLinks.map((link) => {
-            const isActive = pathname === link.path;
+            const isActive =
+              link.path === "/dashboard"
+                ? pathname === "/dashboard"
+                : pathname.startsWith(link.path);
+
             const Icon = link.icon;
 
             return (
