@@ -119,6 +119,17 @@ export async function POST(req: Request) {
             return { status: "already_processed" };
           }
 
+          if (orgId) {
+            await client.organizations.updateOrganizationMetadata(orgId, {
+              publicMetadata: {
+                razorpay_customer_id: subEntity?.customer_id,
+                plan: "pro",
+              },
+            });
+          } else {
+            console.warn("Subscription charged but no orgId found in notes");
+          }
+
           await tx.transaction.create({
             data: {
               userId: userId,
@@ -139,17 +150,6 @@ export async function POST(req: Request) {
           return new Response(JSON.stringify({ status: "already_processed" }), {
             status: 200,
           });
-        }
-
-        if (orgId) {
-          await client.organizations.updateOrganizationMetadata(orgId, {
-            publicMetadata: {
-              razorpay_customer_id: subEntity?.customer_id,
-              plan: "pro",
-            },
-          });
-        } else {
-          console.warn("Subscription charged but no orgId found in notes");
         }
       }
     }

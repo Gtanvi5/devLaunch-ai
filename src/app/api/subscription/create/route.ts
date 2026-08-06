@@ -9,7 +9,14 @@ const razorpay = new Razorpay({
 
 export async function POST(req: Request) {
   try {
-    const { planId } = await req.json();
+    let body: { planId?: string };
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
+
+    const { planId } = body;
 
     if (!planId) {
       return NextResponse.json(

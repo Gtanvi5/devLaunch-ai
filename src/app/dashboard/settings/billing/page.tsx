@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import useSWR from "swr";
 import { motion } from "framer-motion";
 import {
@@ -55,6 +56,8 @@ export default function BillingTab() {
     fetcher,
   );
 
+  const [isCancelling, setIsCancelling] = useState(false);
+
   const formatCurrency = (amount: number, currency: string = "USD") => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -91,15 +94,17 @@ export default function BillingTab() {
   const handleCancel = async () => {
     if (!confirm("Are you sure you want to cancel your subscription?")) return;
 
+    setIsCancelling(true);
     try {
       const res = await fetch("/api/subscription", { method: "POST" });
       if (!res.ok) throw new Error("Failed to cancel subscription");
-
       await mutate();
       alert("Subscription cancelled successfully.");
     } catch (err) {
       console.error(err);
       alert("Something went wrong cancelling your subscription.");
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -167,7 +172,7 @@ export default function BillingTab() {
                   key={i}
                   className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300"
                 >
-                  <CheckCircle2 className="w-4 h-4 text-violet-500 shrink-0" />{" "}
+                  <CheckCircle2 className="w-4 h-4 text-violet-500 shrink-0" />
                   {feature}
                 </li>
               ))}
@@ -358,9 +363,17 @@ export default function BillingTab() {
           <button
             type="button"
             onClick={handleCancel}
-            className="text-sm font-medium text-zinc-500 hover:text-red-600 dark:hover:text-red-500 transition-colors flex items-center gap-2"
+            disabled={isCancelling}
+            className={`text-sm font-medium transition-colors flex items-center gap-2 ${
+              isCancelling
+                ? "text-zinc-400 cursor-not-allowed"
+                : "text-zinc-500 hover:text-red-600 dark:hover:text-red-500"
+            }`}
           >
-            <AlertCircle className="w-4 h-4" /> Cancel Subscription
+            <AlertCircle className="w-4 h-4" />
+            {isCancelling
+              ? "Cancelling Subscription..."
+              : "Cancel Subscription"}
           </button>
         </motion.div>
       )}

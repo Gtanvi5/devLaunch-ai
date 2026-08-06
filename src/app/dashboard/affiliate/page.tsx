@@ -98,11 +98,16 @@ const mockReferrals = [
   },
 ];
 
-export default function AffiliateDashboard() {
+export default function AffiliateDashboard({
+  affiliateCode,
+  payoutPending,
+  referrals: initialReferrals,
+  chartData,
+}: AffiliateProps) {
   const [copied, setCopied] = useState(false);
-  const [referrals, setReferrals] = useState(mockReferrals);
+  const [referrals, setReferrals] = useState(initialReferrals);
 
-  const affiliateLink = "https://devlaunch.ai/?via=alex_founder";
+  const affiliateLink = `https://devlaunch.ai/?via=${affiliateCode}`;
   const shareText = "Get 20% off your first 3 months of DevLaunch AI! 🚀";
 
   const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
@@ -112,10 +117,14 @@ export default function AffiliateDashboard() {
     affiliateLink,
   )}`;
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(affiliateLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(affiliateLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy link:", err);
+    }
   };
 
   const toggleDebugData = () => {
@@ -146,6 +155,7 @@ export default function AffiliateDashboard() {
               <input
                 type="text"
                 readOnly
+                aria-label="Your unique affiliate link"
                 value={affiliateLink}
                 className="bg-transparent border-none text-white w-full px-3 focus:outline-none font-medium truncate"
               />

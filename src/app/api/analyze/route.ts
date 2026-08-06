@@ -4,8 +4,13 @@ import { google } from "@ai-sdk/google";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { ReportSchema } from "@/lib/schemas";
+import crypto from "crypto";
 
 export const maxDuration = 60;
+
+function hashKey(key: string) {
+  return crypto.createHash("sha256").update(key).digest("hex");
+}
 
 export async function POST(req: Request) {
   try {
@@ -16,18 +21,21 @@ export async function POST(req: Request) {
       const authHeader = req.headers.get("Authorization");
       if (authHeader?.startsWith("Bearer ")) {
         const token = authHeader.split(" ")[1];
+        const hashedIncomingToken = hashKey(token);
 
         const apiKeyRecord = await prisma.apiKey.findUnique({
-          where: { key: token },
+          where: { hashedKey: hashedIncomingToken },
         });
 
         if (apiKeyRecord) {
           finalUserId = apiKeyRecord.userId;
 
-          await prisma.apiKey.update({
-            where: { id: apiKeyRecord.id },
-            data: { lastUsed: new Date() },
-          });
+          prisma.apiKey
+            .update({
+              where: { id: apiKeyRecord.id },
+              data: { lastUsed: new Date() },
+            })
+            .catch((err) => console.error("Failed to update lastUsed:", err));
         }
       }
     }
@@ -36,7 +44,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json();
+    let body: { idea?: string };
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid JSON request body." },
+        { status: 400 },
+      );
+    }
+
     const { idea } = body;
 
     if (!idea || typeof idea !== "string" || idea.trim().length < 10) {
@@ -46,64 +63,65 @@ export async function POST(req: Request) {
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: finalUserId },
-      select: { credits: true },
+    const creditDeduction = await prisma.user.updateMany({
+      where: { id: finalUserId, credits: { gte: 1 } },
+      data: { credits: { decrement: 1 } },
     });
-    if (!user || user.credits < 1) {
+
+    if (creditDeduction.count === 0) {
       return NextResponse.json(
         {
           error:
-            "Insufficient credits. Please upgrade to generate more reports.",
+            "Insufficient credits. Please upgrade your plan to generate more reports.",
         },
         { status: 403 },
       );
     }
 
-    const { object: aiData } = await generateObject({
-      model: google("gemini-2.0-flash"),
-      system:
-        "You are an expert venture capitalist AI evaluating hardware and software tech pitches. Provide a brutal, highly realistic analysis focusing on market size, competitor threats, and a comprehensive SWOT breakdown.",
-      prompt: `Evaluate this pitch: "${idea.trim()}"`,
-      schema: ReportSchema,
-    });
-
-    const [savedReport] = await prisma.$transaction(async (tx) => {
-      const updated = await tx.user.updateMany({
-        where: { id: finalUserId, credits: { gte: 1 } },
-        data: { credits: { decrement: 1 } },
+    try {
+      const { object: aiData } = await generateObject({
+        model: google("gemini-2.0-flash"),
+        system:
+          "You are an expert venture capitalist AI evaluating tech pitches. Provide a realistic analysis focusing on market size, competitor threats, and a comprehensive SWOT breakdown.",
+        prompt: `Evaluate this pitch: "${idea.trim()}"`,
+        schema: ReportSchema,
       });
 
-      if (updated.count === 0) throw new Error("INSUFFICIENT_CREDITS");
+      const generatedTitle =
+        (aiData as { title?: string }).title ||
+        (idea.trim().length > 50
+          ? `${idea.trim().slice(0, 47)}...`
+          : idea.trim());
 
-      const report = await tx.report.create({
+      const savedReport = await prisma.report.create({
         data: {
           userId: finalUserId,
+          title: generatedTitle,
           prompt: idea.trim(),
           score: aiData.score,
-          marketSize: aiData.marketSize,
-          competitorRisk: aiData.competitorRisk,
-          swot: aiData.swot,
+          marketAnalysis: aiData,
           status: "COMPLETED",
         },
       });
 
-      return [updated, report];
-    });
+      return NextResponse.json(savedReport);
+    } catch (aiError) {
+      await prisma.user.update({
+        where: { id: finalUserId },
+        data: { credits: { increment: 1 } },
+      });
 
-    return NextResponse.json(savedReport);
+      console.error("AI Generation Failed, credit refunded:", aiError);
+      return NextResponse.json(
+        { error: "Failed to generate report analysis. Credit refunded." },
+        { status: 500 },
+      );
+    }
   } catch (error: unknown) {
     console.error("AI Analysis Error:", error);
 
-    if (error instanceof Error && error.message === "INSUFFICIENT_CREDITS") {
-      return NextResponse.json(
-        { error: "Insufficient credits." },
-        { status: 403 },
-      );
-    }
-
     return NextResponse.json(
-      { error: "Failed to analyze idea." },
+      { error: "Failed to process request." },
       { status: 500 },
     );
   }

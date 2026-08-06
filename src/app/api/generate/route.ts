@@ -3,8 +3,13 @@ import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import crypto from "crypto";
 
 export const maxDuration = 60;
+
+function hashKey(key: string) {
+  return crypto.createHash("sha256").update(key).digest("hex");
+}
 
 export async function POST(req: Request) {
   try {
@@ -15,9 +20,36 @@ export async function POST(req: Request) {
       );
     }
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    let userId: string | null = null;
+    const authHeader = req.headers.get("authorization");
 
-    const { userId } = await auth();
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.split(" ")[1];
+      const hashedToken = hashKey(token);
+
+      const apiKeyRecord = await prisma.apiKey.findUnique({
+        where: { hashedKey: hashedToken },
+      });
+
+      if (apiKeyRecord) {
+        userId = apiKeyRecord.userId;
+
+        prisma.apiKey
+          .update({
+            where: { id: apiKeyRecord.id },
+            data: { lastUsed: new Date() },
+          })
+          .catch((err) => console.error("Failed to update lastUsed", err));
+      } else {
+        return NextResponse.json({ error: "Invalid API Key" }, { status: 401 });
+      }
+    }
+
+    if (!userId) {
+      const clerkAuth = await auth();
+      userId = clerkAuth.userId;
+    }
+
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -37,16 +69,35 @@ export async function POST(req: Request) {
         );
       }
 
-      user = await prisma.user.create({
-        data: {
-          id: userId,
-          email: email,
-          credits: 10,
-        },
-      });
+      try {
+        user = await prisma.user.create({
+          data: {
+            id: userId,
+            email: email,
+            credits: 10,
+          },
+        });
+      } catch (e) {
+        if (
+          e instanceof Prisma.PrismaClientKnownRequestError &&
+          e.code === "P2002"
+        ) {
+          user = await prisma.user.findUnique({
+            where: { id: userId },
+          });
+        } else {
+          throw e;
+        }
+      }
     }
 
-    const body = await req.json();
+    let body: { prompt?: string };
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
+
     const { prompt } = body;
 
     if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
@@ -80,8 +131,9 @@ export async function POST(req: Request) {
     }
 
     try {
+      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({
-        model: process.env.GEMINI_MODEL || "gemini-3.6-flash",
+        model: process.env.GEMINI_MODEL || "gemini-2.0-flash",
         systemInstruction:
           "You are an elite VC and startup analyst. Validate the startup idea provided by the user with rigorous, objective data.",
         generationConfig: {
@@ -134,10 +186,12 @@ export async function POST(req: Request) {
 
       if (!responseText) throw new Error("Empty response from AI");
 
-      const cleanJsonText = responseText
-        .replace(/^```json\n?|```$/gi, "")
-        .trim();
-      const reportData = JSON.parse(cleanJsonText);
+      let reportData;
+      try {
+        reportData = JSON.parse(responseText.trim());
+      } catch (parseError) {
+        throw new Error("AI returned malformed data structure.");
+      }
 
       const savedReport = await prisma.report.create({
         data: {
@@ -159,12 +213,15 @@ export async function POST(req: Request) {
       });
 
       console.error("Generation Error:", generationError);
-      throw generationError;
+      return NextResponse.json(
+        { error: "Failed to generate report. Credit refunded." },
+        { status: 500 },
+      );
     }
   } catch (error) {
     console.error("API Error:", error);
     return NextResponse.json(
-      { error: "Failed to generate report. Please try again later." },
+      { error: "An unexpected error occurred. Please try again later." },
       { status: 500 },
     );
   }

@@ -19,7 +19,18 @@ export async function GET() {
 
     const credits = user?.credits ?? 10;
 
-    return NextResponse.json({ credits }, { status: 200 });
+    return NextResponse.json(
+      { credits },
+      {
+        status: 200,
+        headers: {
+          "Cache-Control":
+            "no-store, no-cache, must-revalidate, proxy-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      },
+    );
   } catch (error) {
     console.error("Failed to fetch user credits:", error);
     return NextResponse.json(

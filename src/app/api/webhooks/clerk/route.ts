@@ -39,8 +39,11 @@ export async function POST(req: Request) {
   const eventType = evt.type;
 
   try {
-    if (eventType === "user.created") {
-      const primaryEmail = evt.data.email_addresses?.[0]?.email_address;
+    if (eventType === "user.created" || eventType === "user.updated") {
+      const primaryEmail =
+        evt.data.email_addresses?.find(
+          (email) => email.id === evt.data.primary_email_address_id,
+        )?.email_address || evt.data.email_addresses?.[0]?.email_address;
 
       if (!primaryEmail) {
         return new Response("Error: No email provided in payload", {

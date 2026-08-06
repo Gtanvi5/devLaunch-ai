@@ -5,6 +5,10 @@ import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import { revalidatePath } from "next/cache";
 
+function hashKey(key: string) {
+  return crypto.createHash("sha256").update(key).digest("hex");
+}
+
 export async function createApiKey(name: string) {
   try {
     const { userId } = await auth();
@@ -14,18 +18,28 @@ export async function createApiKey(name: string) {
     const prefix = "sk_live_";
     const fullKey = `${prefix}${rawKey}`;
 
+    const hashedKey = hashKey(fullKey);
+    const lastFour = fullKey.slice(-4);
+
     const newKey = await prisma.apiKey.create({
       data: {
         userId,
         name: name.trim() || "Default Key",
-        key: fullKey,
+        hashedKey,
+        lastFour,
         prefix,
       },
     });
 
-    revalidatePath("/developer");
+    revalidatePath("/dashboard/settings/api");
 
-    return { success: true, key: newKey };
+    return {
+      success: true,
+      key: {
+        ...newKey,
+        key: fullKey,
+      },
+    };
   } catch (error) {
     console.error("Error creating API key:", error);
     return { success: false, error: "Failed to create API key" };
@@ -43,10 +57,11 @@ export async function getApiKeys() {
     });
 
     const maskedKeys = keys.map((k) => {
-      const lastFour = k.key.slice(-4);
+      const { hashedKey, ...safeKeyData } = k;
+
       return {
-        ...k,
-        maskedKey: `${k.prefix}...${lastFour}`,
+        ...safeKeyData,
+        maskedKey: `${k.prefix}...${k.lastFour}`,
       };
     });
 
@@ -69,7 +84,7 @@ export async function deleteApiKey(id: string) {
       },
     });
 
-    revalidatePath("/developer");
+    revalidatePath("/dashboard/settings/api");
     return { success: true };
   } catch (error) {
     console.error("Error deleting API key:", error);

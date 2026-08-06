@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth, currentUser, clerkClient } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import Razorpay from "razorpay";
 
 const razorpay = new Razorpay({
@@ -9,17 +9,37 @@ const razorpay = new Razorpay({
 
 export async function POST() {
   try {
-    const { userId } = await auth();
+    const { userId, orgId, has } = await auth();
+
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = await currentUser();
-    const customerId = user?.publicMetadata?.razorpay_customer_id as string;
+    if (!orgId) {
+      return NextResponse.json(
+        { error: "Active workspace required to manage subscriptions." },
+        { status: 400 },
+      );
+    }
+
+    if (!has({ role: "org:admin" })) {
+      return NextResponse.json(
+        { error: "Only Workspace Admins can cancel subscriptions." },
+        { status: 403 },
+      );
+    }
+
+    const client = await clerkClient();
+    const organization = await client.organizations.getOrganization({
+      organizationId: orgId,
+    });
+
+    const customerId = organization.publicMetadata
+      ?.razorpay_customer_id as string;
 
     if (!customerId) {
       return NextResponse.json(
-        { error: "No Razorpay customer found." },
+        { error: "No Razorpay customer found for this workspace." },
         { status: 404 },
       );
     }
@@ -40,12 +60,11 @@ export async function POST() {
       );
     }
 
-    await razorpay.subscriptions.cancel(activeSub.id, false);
+    await razorpay.subscriptions.cancel(activeSub.id, true);
 
-    const client = await clerkClient();
-    await client.users.updateUserMetadata(userId, {
+    await client.organizations.updateOrganizationMetadata(orgId, {
       publicMetadata: {
-        subscription_status: "inactive",
+        subscription_status: "canceled",
       },
     });
 

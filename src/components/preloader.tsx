@@ -5,29 +5,29 @@ import gsap from "gsap";
 import Image from "next/image";
 
 export default function Preloader() {
-  const [isComplete, setIsComplete] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return sessionStorage.getItem("devlaunch-preloader") === "true";
-  });
-  const [shouldShow, setShouldShow] = useState(() => {
-    if (typeof window === "undefined") return true;
-    return sessionStorage.getItem("devlaunch-preloader") !== "true";
-  });
+  // 1. Default to true to prevent Hydration Mismatch.
+  // We NEVER read window/sessionStorage in the initial state.
+  const [showPreloader, setShowPreloader] = useState(true);
   const container = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (isComplete) return;
+    // 2. Now that we are safely on the client, check sessionStorage
+    const hasRun = sessionStorage.getItem("devlaunch-preloader") === "true";
 
-    // 2. Lock page scroll while preloading
+    if (hasRun) {
+      setShowPreloader(false);
+      return;
+    }
+
+    // Lock page scroll while preloading
     document.body.style.overflow = "hidden";
 
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
         onComplete: () => {
-          // 3. Mark as shown, restore scroll, and hide
           sessionStorage.setItem("devlaunch-preloader", "true");
           document.body.style.overflow = "";
-          setIsComplete(true);
+          setShowPreloader(false); // Unmount component
         },
       });
 
@@ -73,14 +73,23 @@ export default function Preloader() {
         );
     }, container);
 
+    // 3. Failsafe: If the user switches tabs, browsers pause GSAP animations.
+    // This timeout guarantees the preloader is removed after 4.5s no matter what.
+    const failsafe = setTimeout(() => {
+      sessionStorage.setItem("devlaunch-preloader", "true");
+      document.body.style.overflow = "";
+      setShowPreloader(false);
+    }, 4500);
+
     return () => {
+      clearTimeout(failsafe);
       ctx.revert();
       document.body.style.overflow = ""; // Safety cleanup on unmount
     };
   }, []);
 
-  // Return nothing if already complete or shouldn't show
-  if (isComplete || !shouldShow) return null;
+  // Return nothing if it's already complete
+  if (!showPreloader) return null;
 
   return (
     <div

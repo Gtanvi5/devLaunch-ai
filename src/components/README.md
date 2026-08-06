@@ -10,6 +10,10 @@ project-root/
 │ └── fonts/
 │
 ├── src/
+│ │
+│ ├── actions/
+│ │ ├── apikeys.ts
+│ │ │
 │ ├── app/
 │ │ ├── globals.css
 │ │ ├── layout.tsx
@@ -72,7 +76,8 @@ project-root/
 │ │ │ ├── report/
 │ │ │ │ └── [id]/
 │ │ │ │ ├── page.tsx
-│ │ │ │ └── reportview.tsx
+│ │ │ │ └── ReportView.tsx
+│ │ │ │ └── ReportClient.tsx
 │ │ │ └── settings/
 │ │ │ │ └── page.tsx
 │ │ │ │ └── layout.tsx
@@ -120,9 +125,9 @@ project-root/
 │ │ └── page.tsx
 │ │
 │ ├── components/
-│ │ ├── AnalysisPage.tsx
 │ │ ├── ApiKeysManager.tsx
 │ │ ├── CheckoutButton.tsx
+│ │ ├── clerk-theme-provider.tsx
 │ │ ├── comparison.tsx
 │ │ ├── CreateWorkspaceModal.tsx
 │ │ ├── faq.tsx
@@ -140,10 +145,12 @@ project-root/
 │ │ ├── ReportPDF.tsx
 │ │ ├── ReportResult.tsx
 │ │ ├── ReportSkeleton.tsx
+│ │ ├── ReportViewer.tsx
 │ │ ├── RevenueChart.tsx
 │ │ ├── SampleReport.tsx
 │ │ ├── SettingsNav.tsx
 │ │ ├── Sidebar.tsx
+│ │ ├── SidebarDashboard.tsx
 │ │ ├── testimonials.tsx
 │ │ ├── theme-provider.tsx
 │ │ └── ui/
@@ -153,20 +160,24 @@ project-root/
 │ │ ├── pricing.ts
 │ │
 │ ├── lib/
+│ │ ├── db.ts
 │ │ ├── prisma.ts
 │ │ └── schema.ts
 │ │ └── utils.ts
 │ │
 │ ├── types/
+│ │ └── affiliate.ts
 │ │ └── globals.d.ts
 │ │ └── report.ts
+│ │ └── proxy.ts
+│ │
+│ ├── proxy.ts
 │
 ├── .env
 ├── .env.local
 ├── .gitignore
 ├── components.json
 ├── eslint.config.mjs
-├── middleware.ts
 ├── next-env.d.ts
 ├── next.config.ts
 ├── package.json

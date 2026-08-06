@@ -1,208 +1,310 @@
 "use client";
 
-import { useState, useEffect, useRef, type ReactNode } from "react";
+import { useState, useEffect, useCallback, ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  ChevronLeft,
   ChevronRight,
+  Presentation,
+  Target,
+  Briefcase,
   TrendingUp,
-  ShieldCheck,
-  Users,
-  BarChart3,
-  Lightbulb,
+  AlertCircle,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ReportData } from "@/types/report";
+import { ReportData, ReportSection } from "@/types/report";
 
-interface ReportViewProps {
-  reportData: ReportData;
-  reportTitle?: string;
-}
-
-interface Section {
+interface Slide {
   id: string;
-  label: string;
-  icon: typeof Lightbulb;
+  title: string;
+  icon: React.ElementType;
+  content: ReactNode;
 }
 
-export default function ReportView({
-  reportData,
-  reportTitle = "Pitch Analysis",
-}: ReportViewProps) {
-  const [activeSection, setActiveSection] = useState<string>("exec-summary");
-  const topRef = useRef<HTMLDivElement | null>(null);
-  const isFirstRender = useRef<boolean>(true);
+export default function ReportView({ reportData }: { reportData: ReportData }) {
+  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
 
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-    if (topRef.current) {
-      const y =
-        topRef.current.getBoundingClientRect().top + window.scrollY - 120;
-      window.scrollTo({ top: y, behavior: "smooth" });
-    }
-  }, [activeSection]);
+  const displayTitle =
+    reportData.idea || reportData.prompt || "Market Validation";
+  const formattedDate = reportData.createdAt
+    ? new Date(reportData.createdAt).toLocaleDateString()
+    : new Date().toLocaleDateString();
 
-  const sections: Section[] = [
-    { id: "exec-summary", label: "Executive Summary", icon: Lightbulb },
-    { id: "market-analysis", label: "Market Analysis", icon: TrendingUp },
-    { id: "competitors", label: "Competitor Landscape", icon: Users },
-    { id: "swot", label: "SWOT Breakdown", icon: BarChart3 },
-    { id: "recommendation", label: "Strategic Verdict", icon: ShieldCheck },
+  const slides: Slide[] = [
+    {
+      id: "title",
+      title: "Validation Overview",
+      icon: Presentation,
+      content: (
+        <div className="flex flex-col items-center justify-center h-full text-center space-y-6">
+          <div className="inline-flex items-center justify-center p-4 bg-indigo-50 dark:bg-indigo-500/10 rounded-full mb-4">
+            <Target className="w-12 h-12 text-indigo-600 dark:text-indigo-400" />
+          </div>
+          <h1 className="text-3xl md:text-5xl font-bold text-zinc-900 dark:text-white tracking-tight max-w-3xl leading-tight">
+            &ldquo;{displayTitle}&rdquo;
+          </h1>
+          <div className="flex items-center gap-4 text-zinc-500 mt-8">
+            <span className="px-4 py-2 rounded-full bg-zinc-100 dark:bg-zinc-800 text-sm font-medium">
+              Score: {reportData.score}/100
+            </span>
+            <span className="px-4 py-2 rounded-full bg-zinc-100 dark:bg-zinc-800 text-sm font-medium">
+              Generated {formattedDate}
+            </span>
+          </div>
+        </div>
+      ),
+    },
   ];
 
-  const currentIndex: number = sections.findIndex(
-    (s) => s.id === activeSection,
-  );
-  const nextSection: Section | null =
-    currentIndex < sections.length - 1 ? sections[currentIndex + 1] : null;
+  if (reportData.executiveSummary) {
+    slides.push({
+      id: "executive-summary",
+      title: "Executive Summary",
+      icon: Briefcase,
+      content: (
+        <SlideContentRenderer
+          title="Executive Summary"
+          data={reportData.executiveSummary}
+        />
+      ),
+    });
+  }
 
-  const renderSectionContent = (): ReactNode => {
-    switch (activeSection) {
-      case "exec-summary":
-        return (
-          <div className="prose dark:prose-invert max-w-none">
-            <p className="text-xl italic text-zinc-600 dark:text-zinc-300 leading-relaxed border-l-4 border-violet-500 pl-6 py-2 bg-zinc-50 dark:bg-zinc-800/50 rounded-r-lg">
-              "{reportData.idea}"
-            </p>
-          </div>
-        );
-      case "market-analysis":
-        return (
-          <div className="prose dark:prose-invert max-w-none">
-            <h3 className="text-xl font-bold text-zinc-900 dark:text-white">
-              Total Addressable Market (TAM)
-            </h3>
-            <p className="text-4xl font-bold text-violet-600 dark:text-violet-400 mt-2">
-              {reportData.marketSize}
-            </p>
-          </div>
-        );
-      case "competitors":
-        return (
-          <div className="prose dark:prose-invert max-w-none">
-            <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-4">
-              Competitor Risk Level
-            </h3>
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-lg font-bold text-lg mb-6">
-              {reportData.competitorRisk}
-            </div>
-            <h4 className="font-bold">Identified Threats</h4>
-            <ul>
-              {reportData.swot?.threats?.map((threat: string, i: number) => (
-                <li key={i}>{threat}</li>
-              )) || <li>No major threats identified by AI.</li>}
-            </ul>
-          </div>
-        );
-      case "swot":
-        return (
+  if (reportData.marketAnalysis) {
+    slides.push({
+      id: "market-analysis",
+      title: "Market Analysis",
+      icon: TrendingUp,
+      content: (
+        <SlideContentRenderer
+          title="Market Analysis"
+          data={reportData.marketAnalysis}
+        />
+      ),
+    });
+  }
+
+  if (reportData.swot) {
+    slides.push({
+      id: "swot-analysis",
+      title: "SWOT Analysis",
+      icon: Zap,
+      content: (
+        <div className="space-y-6 pb-12">
+          <h2 className="text-3xl font-bold text-zinc-900 dark:text-white border-b border-zinc-200 dark:border-zinc-800 pb-4">
+            AI SWOT Analysis
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {reportData.swot &&
-              Object.entries(reportData.swot)
-                .filter(([key]) => key !== "threats")
-                .map(([key, items]: [string, string[]]) => (
-                  <div
-                    key={key}
-                    className="p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50"
-                  >
-                    <h4 className="capitalize font-bold text-lg mb-4">{key}</h4>
-                    <ul className="space-y-2">
-                      {Array.isArray(items) ? (
-                        items.map((item: string, i: number) => (
-                          <li
-                            key={i}
-                            className="flex gap-2 text-sm text-zinc-600 dark:text-zinc-400"
-                          >
-                            <span className="text-violet-500">•</span> {item}
-                          </li>
-                        ))
-                      ) : (
-                        <li>Data unavailable</li>
-                      )}
-                    </ul>
-                  </div>
-                ))}
+            {Object.entries(reportData.swot).map(([category, items]) => (
+              <div
+                key={category}
+                className="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6"
+              >
+                <h3 className="text-lg font-bold capitalize mb-4 text-indigo-600 dark:text-indigo-400">
+                  {category}
+                </h3>
+                <ul className="space-y-2">
+                  {(items as string[]).map((item, i) => (
+                    <li
+                      key={i}
+                      className="text-zinc-600 dark:text-zinc-400 text-sm flex items-start gap-2"
+                    >
+                      <span className="text-indigo-500 font-bold">•</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
-        );
-      case "recommendation":
-        return (
-          <div className="prose dark:prose-invert max-w-none">
-            <h3 className="text-xl font-bold text-zinc-900 dark:text-white">
-              Final Validation Score
-            </h3>
-            <div className="text-6xl font-bold text-emerald-500 my-4">
-              {reportData.score}/100
-            </div>
-            <p className="text-zinc-600 dark:text-zinc-300">
-              Based on the core proposition and a market risk analysis, this
-              project achieved a viability score of {reportData.score}.
-              {reportData.score >= 80
-                ? " This demonstrates exceptional potential for scale and execution."
-                : " Consider refining the market approach or mitigating competitor risks before proceeding."}
-            </p>
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
+        </div>
+      ),
+    });
+  }
+
+  const nextSlide = useCallback(() => {
+    setActiveSlideIndex((prev) => Math.min(prev + 1, slides.length - 1));
+  }, [slides.length]);
+
+  const prevSlide = useCallback(() => {
+    setActiveSlideIndex((prev) => Math.max(prev - 1, 0));
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA"
+      ) {
+        return;
+      }
+      if (e.key === "ArrowRight" || e.key === "Space") {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        prevSlide();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [nextSlide, prevSlide]);
+
+  const activeTag = document.activeElement?.tagName;
+  const isInput =
+    activeTag === "INPUT" || activeTag === "TEXTAREA" || activeTag === "SELECT";
+  const isContentEditable =
+    document.activeElement?.getAttribute("contenteditable") === "true";
+
+  if (isInput || isContentEditable) return;
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8 max-w-6xl mx-auto py-10 px-4">
-      <div className="flex-1 min-w-0 relative">
-        <div
-          ref={topRef}
-          aria-hidden="true"
-          className="absolute top-0 pointer-events-none"
-        />
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeSection}
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -15 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8 md:p-12 shadow-sm"
-          >
-            <div className="flex justify-between items-start mb-12">
-              <div>
-                <h1 className="text-3xl font-bold mb-2">{reportTitle}</h1>
-                <p className="text-zinc-500">
-                  Generated on{" "}
-                  {new Date().toLocaleDateString("en-US", {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  })}{" "}
-                  • {reportData.score}/100 Viability Score
-                </p>
-              </div>
-              <div className="px-4 py-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-full font-bold text-sm">
-                {reportData.score >= 80 ? "Green Light" : "Review Needed"}
-              </div>
-            </div>
+    <div className="flex h-[calc(100vh-57px)] w-full overflow-hidden">
+      <nav
+        className="w-64 border-r border-zinc-200 dark:border-zinc-800/50 bg-white dark:bg-zinc-950 flex flex-col shrink-0"
+        aria-label="Presentation Slides"
+      >
+        <div className="p-4 border-b border-zinc-200 dark:border-zinc-800/50">
+          <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+            Slide Navigator
+          </p>
+        </div>
 
-            <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2">
-              {sections.find((s) => s.id === activeSection)?.label}
-            </h2>
+        <ul className="flex-1 overflow-y-auto p-3 space-y-1" role="tablist">
+          {slides.map((slide, index) => {
+            const isActive = activeSlideIndex === index;
+            const Icon = slide.icon;
 
-            {renderSectionContent()}
-
-            <div className="mt-16 pt-8 border-t border-zinc-100 dark:border-zinc-800 flex justify-end">
-              {nextSection && (
-                <Button
-                  onClick={() => setActiveSection(nextSection.id)}
-                  className="rounded-xl gap-2 bg-violet-600 hover:bg-violet-500 text-white shadow-lg"
+            return (
+              <li key={slide.id} role="presentation">
+                <button
+                  role="tab"
+                  aria-selected={isActive}
+                  aria-controls={`panel-${slide.id}`}
+                  onClick={() => setActiveSlideIndex(index)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all text-left ${
+                    isActive
+                      ? "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 font-medium"
+                      : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900/50"
+                  }`}
                 >
-                  Next: {nextSection.label}
-                  <ChevronRight size={16} />
-                </Button>
+                  <Icon
+                    className={`w-4 h-4 shrink-0 ${
+                      isActive
+                        ? "text-indigo-600 dark:text-indigo-400"
+                        : "opacity-70"
+                    }`}
+                  />
+                  <span className="truncate">{slide.title}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+
+      <main className="flex-1 flex flex-col relative overflow-hidden bg-zinc-50 dark:bg-[#0a0a0a]">
+        <div
+          id={`panel-${slides[activeSlideIndex]?.id}`}
+          role="tabpanel"
+          className="flex-1 overflow-y-auto p-8 md:p-12"
+        >
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeSlideIndex}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="h-full max-w-5xl mx-auto"
+            >
+              {slides[activeSlideIndex]?.content}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        <footer className="h-16 border-t border-zinc-200 dark:border-zinc-800/50 bg-white/50 dark:bg-zinc-950/50 backdrop-blur flex items-center justify-between px-6 shrink-0">
+          <div className="text-sm font-medium text-zinc-500">
+            Slide {activeSlideIndex + 1} of {slides.length}
+          </div>
+
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={prevSlide}
+              disabled={activeSlideIndex === 0}
+              aria-label="Previous Slide"
+              className="dark:border-zinc-800"
+            >
+              <ChevronLeft className="w-4 h-4 mr-1" /> Prev
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={nextSlide}
+              disabled={activeSlideIndex === slides.length - 1}
+              aria-label="Next Slide"
+              className="dark:border-zinc-800"
+            >
+              Next <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
+        </footer>
+      </main>
+    </div>
+  );
+}
+
+function SlideContentRenderer({
+  title,
+  data,
+}: {
+  title: string;
+  data: ReportSection;
+}) {
+  if (!data) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center text-zinc-400">
+        <AlertCircle className="w-12 h-12 mb-4 opacity-20" />
+        <p>No data available for {title}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8 pb-12">
+      <h2 className="text-3xl font-bold text-zinc-900 dark:text-white border-b border-zinc-200 dark:border-zinc-800 pb-4">
+        {title}
+      </h2>
+      <div className="grid gap-6">
+        {Object.entries(data).map(([key, value]) => (
+          <div
+            key={key}
+            className="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6"
+          >
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 capitalize mb-3">
+              {key.replace(/([A-Z])/g, " $1").trim()}
+            </h3>
+            <div className="text-zinc-600 dark:text-zinc-400 leading-relaxed text-sm">
+              {typeof value === "string" ? (
+                <p>{value}</p>
+              ) : Array.isArray(value) ? (
+                <ul className="list-disc pl-5 space-y-1">
+                  {value.map((item, i) => (
+                    <li key={i}>{String(item)}</li>
+                  ))}
+                </ul>
+              ) : (
+                <pre className="bg-zinc-50 dark:bg-zinc-950 p-4 rounded-lg overflow-x-auto text-xs">
+                  {JSON.stringify(value, null, 2)}
+                </pre>
               )}
             </div>
-          </motion.div>
-        </AnimatePresence>
+          </div>
+        ))}
       </div>
     </div>
   );

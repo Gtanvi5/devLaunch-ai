@@ -1,39 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { motion } from "framer-motion";
-import {
-  Key,
-  Copy,
-  Eye,
-  EyeOff,
-  Plus,
-  Webhook,
-  Activity,
-  Terminal,
-  CheckCircle2,
-  AlertTriangle,
-  MoreVertical,
-} from "lucide-react";
-
-const apiKeys = [
-  {
-    id: 1,
-    name: "Production Key",
-    prefix: "dev_live_",
-    key: "sk_live_9a8b7c6d5e4f3g2h1i0j",
-    created: "Jul 10, 2026",
-    lastUsed: "2 mins ago",
-  },
-  {
-    id: 2,
-    name: "Staging / Testing",
-    prefix: "dev_test_",
-    key: "sk_test_1a2b3c4d5e6f7g8h9i0j",
-    created: "Jul 12, 2026",
-    lastUsed: "Never",
-  },
-];
+import { Webhook, Activity, Terminal, AlertTriangle, Plus } from "lucide-react";
+import ApiKeysManager from "@/components/ApiKeysManager";
 
 const webhooks = [
   {
@@ -45,24 +14,6 @@ const webhooks = [
 ];
 
 export default function ApiSettingsPage() {
-  const [visibleKeys, setVisibleKeys] = useState<Record<number, boolean>>({});
-  const [copiedKey, setCopiedKey] = useState<number | null>(null);
-
-  const toggleKeyVisibility = (id: number) => {
-    setVisibleKeys((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  const handleCopy = (id: number, fullKey: string) => {
-    navigator.clipboard.writeText(fullKey);
-    setCopiedKey(id);
-    setTimeout(() => setCopiedKey(null), 2000);
-  };
-
-  const maskKey = (key: string) => {
-    const prefix = key.substring(0, 8);
-    return `${prefix}${"*".repeat(24)}`;
-  };
-
   return (
     <div className="space-y-8 max-w-4xl">
       <div>
@@ -119,92 +70,8 @@ export default function ApiSettingsPage() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-white dark:bg-zinc-900/50 rounded-3xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm"
       >
-        <div className="p-6 sm:p-8 border-b border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border border-zinc-200 dark:border-zinc-700">
-              <Key className="w-5 h-5 text-zinc-600 dark:text-zinc-300" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
-                API Keys
-              </h2>
-              <p className="text-xs text-zinc-500">
-                Do not share your API keys in public repositories.
-              </p>
-            </div>
-          </div>
-          <button className="flex items-center justify-center gap-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-all shadow-sm">
-            <Plus className="w-4 h-4" /> Create New Key
-          </button>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-zinc-50 dark:bg-zinc-900/80 text-zinc-500 dark:text-zinc-400">
-              <tr>
-                <th className="px-6 py-4 font-medium">Name</th>
-                <th className="px-6 py-4 font-medium">Secret Key</th>
-                <th className="px-6 py-4 font-medium">Created</th>
-                <th className="px-6 py-4 font-medium">Last Used</th>
-                <th className="px-6 py-4"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-              {apiKeys.map((item) => (
-                <tr
-                  key={item.id}
-                  className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors"
-                >
-                  <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-300">
-                    {item.name}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <code className="bg-zinc-100 dark:bg-zinc-950 px-2 py-1 rounded text-zinc-700 dark:text-zinc-300 font-mono text-xs border border-zinc-200 dark:border-zinc-800">
-                        {visibleKeys[item.id] ? item.key : maskKey(item.key)}
-                      </code>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => toggleKeyVisibility(item.id)}
-                          className="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                          title={
-                            visibleKeys[item.id] ? "Hide Key" : "Reveal Key"
-                          }
-                        >
-                          {visibleKeys[item.id] ? (
-                            <EyeOff className="w-4 h-4" />
-                          ) : (
-                            <Eye className="w-4 h-4" />
-                          )}
-                        </button>
-                        <button
-                          onClick={() => handleCopy(item.id, item.key)}
-                          className="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                          title="Copy to clipboard"
-                        >
-                          {copiedKey === item.id ? (
-                            <CheckCircle2 className="w-4 h-4 text-green-500" />
-                          ) : (
-                            <Copy className="w-4 h-4" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-zinc-500">{item.created}</td>
-                  <td className="px-6 py-4 text-zinc-500">{item.lastUsed}</td>
-                  <td className="px-6 py-4 text-right">
-                    <button className="text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
-                      <MoreVertical className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ApiKeysManager />
       </motion.div>
 
       <motion.div

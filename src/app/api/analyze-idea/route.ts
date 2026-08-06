@@ -2,17 +2,48 @@ import { NextResponse } from "next/server";
 import { streamObject } from "ai";
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
+import { auth } from "@clerk/nextjs/server";
+import { prisma } from "@/lib/prisma";
 
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
   try {
-    const { industry, region = "Global" } = await req.json();
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    let body: { industry?: string; region?: string };
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid JSON request body." },
+        { status: 400 },
+      );
+    }
+
+    const { industry, region = "Global" } = body;
 
     if (!industry || typeof industry !== "string" || industry.length < 3) {
       return NextResponse.json(
         { error: "Invalid industry provided." },
         { status: 400 },
+      );
+    }
+
+    const creditDeduction = await prisma.user.updateMany({
+      where: { id: userId, credits: { gte: 1 } },
+      data: { credits: { decrement: 1 } },
+    });
+
+    if (creditDeduction.count === 0) {
+      return NextResponse.json(
+        {
+          error: "Insufficient credits. Please upgrade your plan.",
+        },
+        { status: 403 },
       );
     }
 

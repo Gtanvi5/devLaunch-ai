@@ -71,3 +71,6 @@ uploads/
 ngrok.exe
 ngrok
 /src/generated/prisma
+
+
+src/components/README.md

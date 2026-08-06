@@ -51,7 +51,6 @@ export default function GeneratedReport({
 
   return (
     <div className="w-full max-w-6xl mx-auto flex flex-col h-full">
-      {/* Report Header */}
       <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-6 border-b border-slate-200 dark:border-white/10 shrink-0">
         <div>
           <button
@@ -84,9 +83,7 @@ export default function GeneratedReport({
         </div>
       </header>
 
-      {/* Main Content Area Layout */}
       <div className="flex-1 flex flex-col md:flex-row mt-6 gap-8 pb-6">
-        {/* Sidebar Navigation */}
         <aside className="w-full md:w-56 shrink-0">
           <nav className="flex md:flex-col gap-1.5 overflow-x-auto md:overflow-visible pb-2 md:pb-0 hide-scrollbar">
             {TABS.map((tab) => (
@@ -105,7 +102,6 @@ export default function GeneratedReport({
           </nav>
         </aside>
 
-        {/* Tab Content Area */}
         <main className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
           <AnimatePresence mode="wait">
             <motion.div
@@ -122,7 +118,6 @@ export default function GeneratedReport({
                 <MarketAnalysisTab data={data?.marketAnalysis} />
               )}
 
-              {/* Placeholder for tabs not yet built out */}
               {(activeTab === "Competitor Matrix" ||
                 activeTab === "Financial Projections") && (
                 <div className="h-64 flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-white/[0.02]">
@@ -139,8 +134,6 @@ export default function GeneratedReport({
     </div>
   );
 }
-
-// --- TAB COMPONENTS ---
 
 type ExecutiveSummaryData = {
   viabilityVerdict?: string;
@@ -178,16 +171,17 @@ function ExecutiveSummaryTab({ data }: { data?: ExecutiveSummaryData | null }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Strengths */}
         <div className="p-6 rounded-2xl bg-emerald-50 dark:bg-emerald-500/5 border border-emerald-100 dark:border-emerald-500/10">
           <h3 className="flex items-center text-emerald-900 dark:text-emerald-400 font-semibold mb-4 text-base tracking-tight">
             <CheckCircle2 className="w-5 h-5 mr-2" />
             Core Strengths
           </h3>
           <ul className="space-y-3">
-            {data?.strengths?.map((strength: string, i: number) => (
-              <ListItem key={i}>{strength}</ListItem>
-            )) || (
+            {data?.strengths?.length ? (
+              data.strengths.map((strength: string, i: number) => (
+                <ListItem key={i}>{strength}</ListItem>
+              ))
+            ) : (
               <span className="text-sm text-emerald-700 dark:text-emerald-500/80">
                 No strengths identified.
               </span>
@@ -195,7 +189,6 @@ function ExecutiveSummaryTab({ data }: { data?: ExecutiveSummaryData | null }) {
           </ul>
         </div>
 
-        {/* Risks */}
         <div className="p-6 rounded-2xl bg-amber-50 dark:bg-amber-500/5 border border-amber-100 dark:border-amber-500/10">
           <h3 className="flex items-center text-amber-900 dark:text-amber-400 font-semibold mb-4 text-base tracking-tight">
             <AlertTriangle className="w-5 h-5 mr-2" />
@@ -215,7 +208,6 @@ function ExecutiveSummaryTab({ data }: { data?: ExecutiveSummaryData | null }) {
         </div>
       </div>
 
-      {/* AI Verdict */}
       <div className="p-6 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#111] shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 dark:bg-indigo-500/10 rounded-bl-full translate-x-16 -translate-y-16" />
         <h3 className="font-semibold text-lg mb-3 text-slate-900 dark:text-white tracking-tight flex items-center gap-2 relative z-10">
@@ -244,7 +236,6 @@ function MarketAnalysisTab({ data }: { data?: MarketAnalysisData | null }) {
         </p>
       </div>
 
-      {/* Placeholder for a chart */}
       <div className="h-80 w-full rounded-2xl bg-white dark:bg-[#111] border border-slate-200 dark:border-white/10 shadow-sm flex items-center justify-center flex-col">
         <BarChart3 className="w-8 h-8 text-slate-400 dark:text-slate-600 mb-3" />
         <span className="text-slate-500 dark:text-slate-400 text-sm font-medium">

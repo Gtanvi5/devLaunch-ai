@@ -44,26 +44,23 @@ export default function ReportLoadingState({
   const [progress, setProgress] = useState(0);
   const [visibleLogs, setVisibleLogs] = useState<string[]>([]);
 
-  // Handle the overall progress and step advancement
   useEffect(() => {
-    const totalDuration = 12000; // 12 seconds total for the demo
+    const totalDuration = 12000;
     const updateInterval = 100;
+    const increment = 100 / (totalDuration / updateInterval);
 
     const timer = setInterval(() => {
       setProgress((prev) => {
-        const next = prev + 100 / (totalDuration / updateInterval);
+        const next = prev + increment;
 
-        // Update current step based on progress
         const newStep = Math.floor((next / 100) * AGENT_STEPS.length);
-        if (newStep !== currentStep && newStep < AGENT_STEPS.length) {
-          setCurrentStep(newStep);
-        }
+        setCurrentStep(Math.min(newStep, AGENT_STEPS.length - 1));
 
         if (next >= 100) {
           clearInterval(timer);
           setTimeout(() => {
             if (onComplete) onComplete();
-          }, 500); // Brief pause at 100% before firing complete
+          }, 500);
           return 100;
         }
         return next;
@@ -71,9 +68,8 @@ export default function ReportLoadingState({
     }, updateInterval);
 
     return () => clearInterval(timer);
-  }, [currentStep, onComplete]);
+  }, [onComplete]);
 
-  // Handle the fake terminal logs popping up over time
   useEffect(() => {
     let logIndex = 0;
     const logInterval = setInterval(() => {
@@ -83,14 +79,13 @@ export default function ReportLoadingState({
       } else {
         clearInterval(logInterval);
       }
-    }, 1000); // Add a new log every second
+    }, 1000);
 
     return () => clearInterval(logInterval);
   }, []);
 
   return (
     <div className="w-full max-w-3xl mx-auto rounded-3xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#111] shadow-xl overflow-hidden flex flex-col h-[500px]">
-      {/* Header */}
       <div className="p-6 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-gray-50/50 dark:bg-black/20">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center border border-indigo-200 dark:border-indigo-500/30">
@@ -112,9 +107,7 @@ export default function ReportLoadingState({
         </div>
       </div>
 
-      {/* Main Content Area: Steps & Terminal */}
       <div className="flex-1 flex flex-col md:flex-row min-h-0">
-        {/* Left Side: Step Tracker */}
         <div className="flex-1 p-6 border-r border-gray-100 dark:border-white/10 overflow-y-auto">
           <div className="space-y-6">
             {AGENT_STEPS.map((step, index) => {
@@ -125,7 +118,6 @@ export default function ReportLoadingState({
               return (
                 <div key={step.id} className="flex items-start gap-4">
                   <div className="relative mt-1">
-                    {/* Connection Line */}
                     {index !== AGENT_STEPS.length - 1 && (
                       <div
                         className={`absolute top-8 left-1/2 -translate-x-1/2 w-0.5 h-6 transition-colors duration-500 ${
@@ -136,7 +128,6 @@ export default function ReportLoadingState({
                       />
                     )}
 
-                    {/* Status Icon */}
                     <div
                       className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
                         isCompleted
@@ -173,7 +164,6 @@ export default function ReportLoadingState({
           </div>
         </div>
 
-        {/* Right Side: Terminal Output */}
         <div className="flex-1 bg-black/95 dark:bg-[#0a0a0a] p-6 flex flex-col relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-full bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none mix-blend-overlay"></div>
 
@@ -197,7 +187,6 @@ export default function ReportLoadingState({
                   {log}
                 </motion.div>
               ))}
-              {/* Blinking cursor effect for the active state */}
               {progress < 100 && (
                 <motion.div
                   initial={{ opacity: 0 }}
@@ -215,7 +204,6 @@ export default function ReportLoadingState({
         </div>
       </div>
 
-      {/* Bottom Progress Bar */}
       <div className="h-1.5 w-full bg-gray-100 dark:bg-white/5">
         <motion.div
           className="h-full bg-gradient-to-r from-indigo-600 to-blue-500"

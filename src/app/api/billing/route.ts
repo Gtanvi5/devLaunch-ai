@@ -1,11 +1,27 @@
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import Razorpay from "razorpay";
+import { prisma } from "@/lib/prisma";
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID!,
-  key_secret: process.env.RAZORPAY_KEY_SECRET!,
-});
+const PLAN_CONFIG: Record<string, { name: string; features: string[] }> = {
+  plan_StarterId123: {
+    name: "Starter Plan",
+    features: ["1 team member", "1,000 API requests/mo", "Community support"],
+  },
+  plan_ProId456: {
+    name: "Pro Plan",
+    features: [
+      "Up to 5 team members",
+      "10,000 API requests/mo",
+      "Priority email support",
+    ],
+  },
+};
+
+const DEFAULT_PLAN_CONFIG = {
+  name: "Custom Plan",
+  features: ["Standard features"],
+};
 
 export async function GET() {
   try {
@@ -14,8 +30,25 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = await currentUser();
-    const customerId = user?.publicMetadata?.razorpay_customer_id as string;
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+      console.error("❌ ERROR: Razorpay environment variables are missing.");
+      return NextResponse.json(
+        { error: "Payment gateway configuration error." },
+        { status: 500 },
+      );
+    }
+
+    const razorpay = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET,
+    });
+
+    const dbUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { razorpayCustomerId: true },
+    });
+
+    const customerId = dbUser?.razorpayCustomerId;
 
     if (!customerId) {
       return NextResponse.json({
@@ -28,7 +61,7 @@ export async function GET() {
 
     const [subscriptions, invoices] = await Promise.all([
       razorpay.subscriptions.all({
-        count: 10, // Increase this so we don't miss the active one
+        count: 10,
         customer_id: customerId,
       } as Record<string, unknown>),
       razorpay.invoices.all({
@@ -43,9 +76,11 @@ export async function GET() {
       ) || null;
 
     let planDetails = null;
+    let mappedPlan = DEFAULT_PLAN_CONFIG;
 
     if (activeSub?.plan_id) {
       planDetails = await razorpay.plans.fetch(activeSub.plan_id);
+      mappedPlan = PLAN_CONFIG[activeSub.plan_id] || DEFAULT_PLAN_CONFIG;
     }
 
     return NextResponse.json({
@@ -54,23 +89,21 @@ export async function GET() {
         ? {
             id: activeSub.id,
             status: activeSub.status,
-            amount: planDetails?.item?.amount || 0,
-            planName: planDetails?.item?.name || "Pro Plan",
+            amount: planDetails?.item?.amount
+              ? (planDetails.item.amount as number) / 100
+              : 0,
+            planName: planDetails?.item?.name || mappedPlan.name,
             currentPeriodEnd: activeSub.current_end
               ? activeSub.current_end * 1000
               : null,
-            features: [
-              "Up to 5 team members",
-              "10,000 API requests/mo",
-              "Priority email support",
-            ],
+            features: mappedPlan.features,
           }
         : null,
       paymentMethod: null,
       invoices: invoices.items.map((inv) => ({
         id: inv.receipt || inv.id,
         date: inv.issued_at ? inv.issued_at * 1000 : inv.created_at * 1000,
-        amount: inv.amount,
+        amount: ((inv.amount as number) ?? 0) / 100,
         currency: inv.currency,
         status: inv.status
           ? inv.status.charAt(0).toUpperCase() + inv.status.slice(1)

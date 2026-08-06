@@ -5,10 +5,17 @@ export interface SwotAnalysis {
   threats: string[];
 }
 
+export type ReportSection = Record<string, unknown> | null;
+
 export interface ReportData {
+  id: string;
   idea: string;
+  prompt?: string;
   score: number;
-  marketSize: string;
-  competitorRisk: "Low" | "Medium" | "High" | "Extreme";
-  swot: SwotAnalysis;
+  createdAt?: string;
+  marketSize?: string;
+  competitorRisk?: string;
+  swot?: SwotAnalysis;
+  executiveSummary?: ReportSection;
+  marketAnalysis?: ReportSection;
 }

@@ -1,15 +1,59 @@
 import { NextResponse } from "next/server";
 import { streamText } from "ai";
 import { google } from "@ai-sdk/google";
+import { auth } from "@clerk/nextjs/server";
+import { prisma } from "@/lib/prisma";
 
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
   try {
-    const { prompt: industry, price, breadth } = await req.json();
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    if (!industry || price === undefined || breadth === undefined) {
-      return NextResponse.json({ error: "Missing data" }, { status: 400 });
+    let body: { prompt?: string; price?: number; breadth?: number };
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid JSON request body." },
+        { status: 400 },
+      );
+    }
+
+    const { prompt: industry, price, breadth } = body;
+
+    if (
+      !industry ||
+      typeof industry !== "string" ||
+      typeof price !== "number" ||
+      typeof breadth !== "number" ||
+      price < 0 ||
+      price > 100 ||
+      breadth < 0 ||
+      breadth > 100
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Invalid input. Industry string, price (0-100), and breadth (0-100) are required.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const creditDeduction = await prisma.user.updateMany({
+      where: { id: userId, credits: { gte: 1 } },
+      data: { credits: { decrement: 1 } },
+    });
+
+    if (creditDeduction.count === 0) {
+      return NextResponse.json(
+        { error: "Insufficient credits. Please upgrade your plan." },
+        { status: 403 },
+      );
     }
 
     const result = await streamText({

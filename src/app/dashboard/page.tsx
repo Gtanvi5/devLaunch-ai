@@ -13,6 +13,7 @@ import {
   AlertTriangle,
   Zap,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
 import ReportLoadingState from "@/components/ReportLoadingState";
@@ -85,24 +86,28 @@ export default function DashboardPage() {
     setReportData(null);
     setErrorMsg(null);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
+
     try {
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: ideaPrompt }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       const data = await response.json();
 
       if (!response.ok) {
         if (response.status === 403) {
-          setErrorMsg(
-            "You are out of credits. Please upgrade your plan to continue.",
-          );
+          setErrorMsg("You are out of credits. Please upgrade your plan.");
           setIsGenerating(false);
           return;
         }
-        throw new Error(data.message || "API request failed");
+        throw new Error(data.message || data.error || "API request failed");
       }
 
       setReportData(data.report);
@@ -110,11 +115,19 @@ export default function DashboardPage() {
       if (credits !== null) {
         setCredits((prev) => (prev ? prev - 1 : 0));
       }
-    } catch (error) {
-      console.error("Failed to fetch report:", error);
-      setErrorMsg(
-        "Something went wrong while generating your report. Please try again.",
-      );
+
+      toast.success("Analysis complete!");
+    } catch (error: unknown) {
+      clearTimeout(timeoutId);
+
+      if (error instanceof Error && error.name === "AbortError") {
+        setErrorMsg("The AI took too long to respond. Please try again.");
+      } else if (error instanceof Error) {
+        setErrorMsg(error.message);
+      } else {
+        setErrorMsg("Something went wrong while generating your report.");
+      }
+
       setIsGenerating(false);
     }
   };

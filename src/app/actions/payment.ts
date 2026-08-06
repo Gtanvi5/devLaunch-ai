@@ -3,8 +3,14 @@
 import Razorpay from "razorpay";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
+import crypto from "crypto";
 
-export async function createOrder() {
+const PRICING_PLANS = {
+  starter: { price: 1000, credits: 100 },
+  pro: { price: 4000, credits: 500 },
+} as const;
+
+export async function createOrder(planId: keyof typeof PRICING_PLANS) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
@@ -20,16 +26,19 @@ export async function createOrder() {
     key_secret: process.env.RAZORPAY_KEY_SECRET,
   });
 
-  const AMOUNT_INR = 1000;
-  const CREDITS_TO_ADD = 100;
+  const plan = PRICING_PLANS[planId];
+  if (!plan) throw new Error("Invalid pricing plan selected.");
+
+  const receiptId = `rcpt_${crypto.randomUUID().slice(0, 8)}_${Date.now().toString().slice(-6)}`;
 
   const options = {
-    amount: AMOUNT_INR * 100,
+    amount: plan.price * 100,
     currency: "INR",
-    receipt: `receipt_${userId}_${Date.now()}`,
+    receipt: receiptId,
     notes: {
       userId: userId,
-      creditsAdded: CREDITS_TO_ADD,
+      planId: planId,
+      creditsAdded: plan.credits,
     },
   };
 
@@ -39,9 +48,9 @@ export async function createOrder() {
     await prisma.transaction.create({
       data: {
         userId: userId,
-        amount: AMOUNT_INR,
+        amount: plan.price,
         currency: "INR",
-        creditsAdded: CREDITS_TO_ADD,
+        creditsAdded: plan.credits,
         status: "PENDING",
         razorpayOrderId: order.id,
       },
