@@ -1,140 +1,160 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useLayoutEffect } from "react";
 import gsap from "gsap";
 import Image from "next/image";
 
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
+const SESSION_KEY = "devlaunch-preloader";
+
 export default function Preloader() {
-  // 1. Default to true to prevent Hydration Mismatch.
-  // We NEVER read window/sessionStorage in the initial state.
   const [showPreloader, setShowPreloader] = useState(true);
   const container = useRef<HTMLDivElement>(null);
 
+  const isDevMode = process.env.NODE_ENV === "development";
+
+  useIsomorphicLayoutEffect(() => {
+    const hasRun = isDevMode
+      ? false
+      : sessionStorage.getItem(SESSION_KEY) === "true";
+    if (hasRun && container.current) {
+      container.current.style.display = "none";
+    }
+  }, [isDevMode]);
+
   useEffect(() => {
-    // 2. Now that we are safely on the client, check sessionStorage
-    const hasRun = sessionStorage.getItem("devlaunch-preloader") === "true";
+    const hasRun = isDevMode
+      ? false
+      : sessionStorage.getItem(SESSION_KEY) === "true";
 
     if (hasRun) {
       setShowPreloader(false);
       return;
     }
 
-    // Lock page scroll while preloading
+    if (!showPreloader || !container.current) return;
+
     document.body.style.overflow = "hidden";
 
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
         onComplete: () => {
-          sessionStorage.setItem("devlaunch-preloader", "true");
+          sessionStorage.setItem(SESSION_KEY, "true");
           document.body.style.overflow = "";
-          setShowPreloader(false); // Unmount component
+          setShowPreloader(false);
         },
       });
 
       tl.to(".preloader-line", {
         width: "100%",
         duration: 1.2,
-        ease: "expo.inOut",
+        ease: "power4.inOut",
       })
-        .fromTo(
-          ".preloader-content",
-          { opacity: 0, scale: 0.8, filter: "blur(10px)", rotation: -2 },
-          {
-            opacity: 1,
-            scale: 1,
-            filter: "blur(0px)",
-            rotation: 0,
-            duration: 0.8,
-            ease: "power3.out",
-          },
-          "-=0.6",
-        )
-        .to(".preloader-line", { opacity: 0, duration: 0.4 }, "+=0.4")
         .to(
-          ".preloader-content",
-          {
-            scale: 1.5,
-            opacity: 0,
-            filter: "blur(10px)",
-            duration: 0.6,
-            ease: "power3.in",
-          },
+          ".panel-top",
+          { yPercent: -15, duration: 1, ease: "power3.inOut" },
           "-=0.2",
         )
         .to(
-          ".panel-top",
-          { yPercent: -100, duration: 0.8, ease: "expo.inOut" },
-          "-=0.3",
+          ".panel-bottom",
+          { yPercent: 15, duration: 1, ease: "power3.inOut" },
+          "<",
         )
+        .to(".preloader-line", { opacity: 0, duration: 0.3 }, "<0.2")
+
+        .fromTo(
+          ".preloader-content",
+          { scale: 0.85, opacity: 0, filter: "blur(12px)" },
+          {
+            scale: 1,
+            opacity: 1,
+            filter: "blur(0px)",
+            duration: 1,
+            ease: "back.out(1.2)",
+          },
+          "-=0.8",
+        )
+
+        .to(".preloader-content", { scale: 1.05, duration: 0.8, ease: "none" })
+
+        .to(".panel-top", { yPercent: -100, duration: 1, ease: "expo.inOut" })
         .to(
           ".panel-bottom",
-          { yPercent: 100, duration: 0.8, ease: "expo.inOut" },
+          { yPercent: 100, duration: 1, ease: "expo.inOut" },
           "<",
-        );
-    }, container);
+        )
 
-    // 3. Failsafe: If the user switches tabs, browsers pause GSAP animations.
-    // This timeout guarantees the preloader is removed after 4.5s no matter what.
+        .to(
+          ".preloader-content",
+          {
+            scale: 1.4,
+            opacity: 0,
+            filter: "blur(8px)",
+            duration: 0.8,
+            ease: "power3.in",
+          },
+          "<0.1",
+        );
+    }, container.current);
+
     const failsafe = setTimeout(() => {
-      sessionStorage.setItem("devlaunch-preloader", "true");
+      sessionStorage.setItem(SESSION_KEY, "true");
       document.body.style.overflow = "";
       setShowPreloader(false);
-    }, 4500);
+    }, 5500);
 
     return () => {
       clearTimeout(failsafe);
       ctx.revert();
-      document.body.style.overflow = ""; // Safety cleanup on unmount
+      document.body.style.overflow = "";
     };
-  }, []);
+  }, [showPreloader, isDevMode]);
 
-  // Return nothing if it's already complete
   if (!showPreloader) return null;
 
   return (
     <div
       ref={container}
       aria-hidden="true"
-      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center pointer-events-none"
+      className="fixed inset-0 z-9999 flex flex-col items-center justify-center pointer-events-none bg-zinc-950"
     >
-      {/* Top Half */}
-      <div className="panel-top absolute top-0 left-0 w-full h-1/2 bg-zinc-50 dark:bg-[#0A0A0A] pointer-events-auto border-b border-zinc-200 dark:border-white/5" />
+      <div className="preloader-content absolute inset-0 z-10 flex flex-col items-center justify-center gap-4">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-indigo-500/20 dark:bg-indigo-500/30 blur-[60px] rounded-full pointer-events-none" />
 
-      {/* Bottom Half */}
-      <div className="panel-bottom absolute bottom-0 left-0 w-full h-1/2 bg-zinc-50 dark:bg-[#0A0A0A] pointer-events-auto border-t border-zinc-200 dark:border-white/5" />
+        <div className="relative flex items-center justify-center gap-4">
+          <div className="preloader-logo relative flex items-center justify-center shrink-0 w-10 h-10 md:w-12 md:h-12">
+            <Image
+              src="/logo.png"
+              alt="DevLaunch AI Logo"
+              fill
+              className="object-contain block dark:hidden drop-shadow-xl"
+              priority
+            />
+            <Image
+              src="/dark-logo.png"
+              alt="DevLaunch AI Logo"
+              fill
+              className="object-contain hidden dark:block drop-shadow-xl"
+              priority
+            />
+          </div>
 
-      {/* Laser Line */}
-      <div className="preloader-line absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[1px] w-0 bg-gradient-to-r from-transparent via-indigo-500 to-transparent z-10 shadow-[0_0_12px_rgba(99,102,241,0.4)] dark:shadow-[0_0_20px_rgba(99,102,241,0.8)]" />
-
-      {/* Center Content */}
-      <div className="preloader-content absolute w-full px-4 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex items-center justify-center gap-3 sm:gap-4 md:gap-5 drop-shadow-xl dark:drop-shadow-2xl">
-        {/* Responsive Logo Container */}
-        <div className="relative flex items-center justify-center shrink-0 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12">
-          <div className="absolute inset-0 bg-indigo-500/10 dark:bg-indigo-500/20 blur-xl rounded-full" />
-          <Image
-            src="/logo.png"
-            alt="DevLaunch AI Logo"
-            fill
-            className="object-contain relative z-10 block dark:hidden"
-            priority
-          />
-          <Image
-            src="/dark-logo.png"
-            alt="DevLaunch AI Logo"
-            fill
-            className="object-contain relative z-10 hidden dark:block"
-            priority
-          />
+          <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-zinc-900 dark:text-white flex gap-2">
+            <span>DevLaunch</span>
+            <span className="text-transparent bg-clip-text bg-linear-to-r from-indigo-500 to-purple-500">
+              AI
+            </span>
+          </h1>
         </div>
-
-        {/* Responsive Typography */}
-        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tighter text-zinc-900 dark:text-white flex gap-1.5 sm:gap-2">
-          DevLaunch
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">
-            AI
-          </span>
-        </h1>
       </div>
+
+      <div className="panel-top absolute top-0 left-0 w-full h-1/2 bg-zinc-50 dark:bg-[#060608] z-20 pointer-events-auto border-b border-zinc-200/50 dark:border-white/5 shadow-[0_10px_30px_rgba(0,0,0,0.1)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.5)]" />
+
+      <div className="preloader-line absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-0.5 w-0 bg-linear-to-r from-transparent via-indigo-500 to-transparent z-30 shadow-[0_0_15px_rgba(99,102,241,0.6)]" />
+
+      <div className="panel-bottom absolute bottom-0 left-0 w-full h-1/2 bg-zinc-50 dark:bg-[#060608] z-20 pointer-events-auto border-t border-zinc-200/50 dark:border-white/5 shadow-[0_-10px_30px_rgba(0,0,0,0.1)] dark:shadow-[0_-10px_30px_rgba(0,0,0,0.5)]" />
     </div>
   );
 }

@@ -98,10 +98,27 @@ const mockReferrals = [
   },
 ];
 
+interface AffiliateProps {
+  affiliateCode: string;
+  payoutPending: string;
+  initialReferrals: Array<{
+    user: string;
+    plan: string;
+    status: string;
+    date: string;
+    amount: string;
+  }>;
+  chartData: Array<{
+    date: string;
+    clicks: number;
+    signups: number;
+  }>;
+}
+
 export default function AffiliateDashboard({
   affiliateCode,
   payoutPending,
-  referrals: initialReferrals,
+  initialReferrals,
   chartData,
 }: AffiliateProps) {
   const [copied, setCopied] = useState(false);

@@ -9,6 +9,7 @@ import {
   BarChart3,
   Lightbulb,
 } from "lucide-react";
+import Link from "next/link";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -202,9 +203,9 @@ export default function Hero() {
       <div className="absolute top-1/2 right-0 w-150 h-150 bg-indigo-500/5 dark:bg-indigo-500/10 blur-[120px] rounded-full pointer-events-none -translate-y-1/2" />
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-size-[32px_32px] mask-[radial-gradient(ellipse_80%_80%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10 w-full">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10 w-full ">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-          <div className="w-full max-w-xl mx-auto lg:mx-0 text-center lg:text-left">
+          <div className="w-full max-w-xl mx-auto lg:mx-0 text-center lg:text-left mb-0 lg:mb-27">
             <motion.div
               variants={containerVariants}
               initial="hidden"
@@ -247,20 +248,20 @@ export default function Hero() {
                 variants={itemVariants}
                 className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4"
               >
-                <button
-                  type="button"
+                <Link
+                  href="/tools/idea-scorer"
                   className="w-full sm:w-auto h-12 px-8 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 font-medium text-sm tracking-tight hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-all flex items-center justify-center gap-2 shadow-md active:scale-[0.98]"
                 >
                   <span>Generate Free Report</span>
                   <ChevronRight className="w-4 h-4 text-zinc-400 dark:text-zinc-500" />
-                </button>
-                <button
-                  type="button"
+                </Link>
+                <Link
+                  href="/docs"
                   className="w-full sm:w-auto h-12 px-8 rounded-full bg-transparent border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 font-medium text-sm tracking-tight hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
                 >
                   <span>View Documentation</span>
                   <ArrowRight className="w-4 h-4 text-zinc-400" />
-                </button>
+                </Link>
               </motion.div>
 
               <motion.div
@@ -417,15 +418,15 @@ export default function Hero() {
                               <motion.div
                                 custom={val}
                                 variants={barVariants}
-                                className="w-full bg-zinc-200 dark:bg-zinc-800 rounded-t-sm relative group-hover:bg-indigo-100 dark:group-hover:bg-indigo-500/20 transition-colors cursor-pointer"
+                                className="w-full bg-zinc-200 dark:bg-zinc-800 rounded-t-sm relative lg:group-hover:bg-indigo-100 dark:lg:group-hover:bg-indigo-500/20 transition-colors cursor-pointer"
                               >
-                                <div className="absolute -top-7 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:-translate-y-0.5 transition-all duration-200 pointer-events-none z-20">
-                                  <span className="px-1.5 py-0.5 text-[10px] font-mono font-semibold text-zinc-900 dark:text-white bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded shadow-md whitespace-nowrap">
+                                <div className="absolute -top-7 left-1/2 -translate-x-1/2 opacity-100 -translate-y-0.5 lg:opacity-0 lg:group-hover:opacity-100 lg:group-hover:-translate-y-0.5 transition-all duration-200 pointer-events-none z-20">
+                                  <span className="px-1.5 py-0.5 text-[10px] font-mono font-semibold text-zinc-900 dark:text-white bg-white/90 dark:bg-zinc-800/90 backdrop-blur-sm border border-zinc-200 dark:border-zinc-700 rounded shadow-sm whitespace-nowrap lg:shadow-md">
                                     {val}
                                   </span>
                                 </div>
 
-                                <div className="absolute top-0 inset-x-0 h-1 bg-zinc-400 dark:bg-zinc-600 rounded-t-sm group-hover:bg-indigo-500 transition-colors" />
+                                <div className="absolute top-0 inset-x-0 h-1 bg-zinc-400 dark:bg-zinc-600 rounded-t-sm lg:group-hover:bg-indigo-500 transition-colors" />
                               </motion.div>
                             </div>
                             <span className="text-[9px] sm:text-[10px] text-zinc-500 dark:text-zinc-400 font-medium uppercase mt-1">

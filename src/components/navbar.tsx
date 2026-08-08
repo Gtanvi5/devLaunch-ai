@@ -16,7 +16,6 @@ import {
 import Magnetic from "@/components/ui/magnetic";
 import Image from "next/image";
 
-// 🚀 Clean, Tier-1 SaaS Navigation Links
 const navLinks = [
   { name: "Features", path: "/#features" },
   { name: "Live Demo", path: "/demo" },
@@ -37,12 +36,10 @@ export default function Navbar() {
   const { scrollY } = useScroll();
   const { theme, setTheme, systemTheme } = useTheme();
 
-  // Handle Hydration safely
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Lock body scroll on mobile menu & handle window resize edge-case
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -51,7 +48,6 @@ export default function Navbar() {
     }
 
     const handleResize = () => {
-      // Auto-close mobile menu if screen resizes to desktop width (768px = md breakpoint)
       if (window.innerWidth >= 768 && isOpen) {
         setIsOpen(false);
       }
@@ -65,7 +61,6 @@ export default function Navbar() {
     };
   }, [isOpen]);
 
-  // Scroll spy: Track which section is currently active on the screen (for hash links)
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -81,15 +76,16 @@ export default function Navbar() {
     navLinks.forEach((link) => {
       if (link.path.startsWith("/#")) {
         const id = link.path.replace("/#", "");
-        const element = document.getElementById(id);
-        if (element) observer.observe(element);
+        if (id) {
+          const element = document.getElementById(id);
+          if (element) observer.observe(element);
+        }
       }
     });
 
     return () => observer.disconnect();
-  }, [pathname]); // Re-run if path changes
+  }, [pathname]);
 
-  // Trigger shrink and glassmorphism on scroll
   useMotionValueEvent(scrollY, "change", (latest) => {
     setIsScrolled(latest > 20);
   });
@@ -98,34 +94,39 @@ export default function Navbar() {
     e: React.MouseEvent<HTMLAnchorElement>,
     path: string,
   ) => {
-    // Only smooth scroll if we are on the homepage AND it's a hash link
     if (path.startsWith("/#") && pathname === "/") {
       e.preventDefault();
+
       const targetId = path.replace("/#", "");
-      const elem = document.getElementById(targetId);
 
-      if (elem) {
-        const offset = 80;
-        const elementPosition = elem.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.scrollY - offset;
+      if (targetId === "") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        window.history.pushState(null, "", "/");
+      } else {
+        const elem = document.getElementById(targetId);
 
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: "smooth",
-        });
+        if (elem) {
+          const offset = 80;
+          const elementPosition = elem.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.scrollY - offset;
+
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: "smooth",
+          });
+
+          window.history.pushState(null, "", path);
+        }
       }
     }
     setIsOpen(false);
   };
 
-  // Determine the active path for the pill indicator
   const currentPath =
     activeSection && pathname === "/" ? activeSection : pathname;
 
-  // Resolve current theme for the toggle icon (safely fall back to system)
   const currentTheme = theme === "system" ? systemTheme : theme;
 
-  // Hide Navbar completely on Dashboard
   if (pathname.startsWith("/dashboard")) {
     return null;
   }
@@ -147,12 +148,11 @@ export default function Navbar() {
           animate={{ height: isScrolled ? "4rem" : "5rem" }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
         >
-          {/* 1. Magnetic Logo Brand */}
           <Magnetic intensity={0.1}>
             <Link
               href="/"
               onClick={(e) => handleScroll(e, "/#")}
-              className="flex items-center gap-2 font-bold text-xl tracking-tight text-zinc-900 dark:text-white group relative z-[60] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-lg"
+              className="flex items-center gap-2 font-bold text-xl tracking-tight text-zinc-900 dark:text-white group relative z-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-lg"
             >
               <motion.div
                 whileHover={{ scale: 1.05 }}
@@ -183,7 +183,6 @@ export default function Navbar() {
             </Link>
           </Magnetic>
 
-          {/* 2. Desktop Navigation with Sliding Pill */}
           <div
             className="hidden md:flex items-center gap-1 bg-zinc-100/60 dark:bg-zinc-900/60 p-1 rounded-full border border-zinc-200/50 dark:border-zinc-800/50 backdrop-blur-md"
             onMouseLeave={() => setHoveredPath(null)}
@@ -203,7 +202,6 @@ export default function Navbar() {
                   onMouseEnter={() => setHoveredPath(link.path)}
                   className="relative px-4 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-full"
                 >
-                  {/* Hover Background */}
                   {hoveredPath === link.path && (
                     <motion.div
                       layoutId="navbar-hover"
@@ -215,7 +213,6 @@ export default function Navbar() {
                       }}
                     />
                   )}
-                  {/* Active Background */}
                   {isActive && hoveredPath === null && (
                     <motion.div
                       layoutId="navbar-active"
@@ -241,7 +238,6 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* 3. Desktop Actions & Glowing CTA */}
           <div className="hidden md:flex items-center gap-4">
             <button
               onClick={() =>
@@ -292,7 +288,7 @@ export default function Navbar() {
                 <Magnetic intensity={0.2}>
                   <SignInButton mode="modal">
                     <div className="relative group cursor-pointer">
-                      <div className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 opacity-20 group-hover:opacity-50 blur transition duration-500 group-hover:duration-200" />
+                      <div className="absolute -inset-0.5 rounded-full bg-linear-to-r from-indigo-500 to-purple-600 opacity-20 group-hover:opacity-50 blur transition duration-500 group-hover:duration-200" />
                       <Button className="relative rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-100 px-6 font-medium text-sm transition-all group-hover:scale-[1.02] active:scale-95 shadow-sm border border-zinc-800 dark:border-white">
                         Start Validating
                       </Button>
@@ -303,8 +299,7 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile Menu Button Trigger */}
-          <div className="flex md:hidden items-center gap-3 relative z-[60]">
+          <div className="flex md:hidden items-center gap-3 relative z-60">
             <button
               onClick={() =>
                 setTheme(currentTheme === "dark" ? "light" : "dark")
@@ -358,7 +353,6 @@ export default function Navbar() {
         </motion.div>
       </div>
 
-      {/* Mobile Drawer */}
       <AnimatePresence>
         {isOpen && (
           <motion.div

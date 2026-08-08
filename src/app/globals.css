@@ -1,6 +1,5 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-/* @import "shadcn/tailwind.css"; */
 @plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
@@ -50,15 +49,13 @@
 }
 
 :root {
-  /* Crisp Light Mode */
-  --background: oklch(0.98 0 0); /* slate-50 equivalent */
+  --background: oklch(0.98 0 0);
   --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0); /* pure white */
+  --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
 
-  /* Indigo-600 for primary branding */
   --primary: oklch(0.511 0.262 275.75);
   --primary-foreground: oklch(0.985 0 0);
 
@@ -70,10 +67,9 @@
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
 
-  /* Subtle borders for light mode */
   --border: oklch(0.92 0 0);
   --input: oklch(0.92 0 0);
-  --ring: oklch(0.511 0.262 275.75); /* Match primary indigo */
+  --ring: oklch(0.511 0.262 275.75);
 
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
@@ -93,15 +89,13 @@
 }
 
 .dark {
-  /* Deep Dark Mode */
-  --background: oklch(0.13 0 0); /* #0a0a0a equivalent */
+  --background: oklch(0.13 0 0);
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.16 0 0); /* #111 equivalent */
+  --card: oklch(0.16 0 0);
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.16 0 0);
   --popover-foreground: oklch(0.985 0 0);
 
-  /* Indigo-500 for primary branding */
   --primary: oklch(0.585 0.233 277.11);
   --primary-foreground: oklch(0.985 0 0);
 
@@ -113,10 +107,9 @@
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
 
-  /* Crisp 10% white borders */
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.585 0.233 277.11); /* Match primary indigo */
+  --ring: oklch(0.585 0.233 277.11);
 
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
@@ -147,4 +140,39 @@
   html {
     font-family: var(--font-sans);
   }
+}
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}
+
+::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+html,
+body {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  overflow-y: auto;
+  overflow-x: hidden;
 }

@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import LenisProvider from "@/components/LenisProvider";
+import "lenis/dist/lenis.css";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { ClerkThemeProvider } from "@/components/clerk-theme-provider";
@@ -79,9 +81,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="scroll-smooth" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <body
-        className={`${inter.variable} font-sans antialiased min-h-screen flex flex-col bg-zinc-50 dark:bg-[#0a0a0a] text-zinc-900 dark:text-zinc-50`}
+        className={`${inter.variable} font-sans antialiased bg-zinc-50 dark:bg-[#0a0a0a] text-zinc-900 dark:text-zinc-50`}
       >
         <ThemeProvider
           attribute="class"
@@ -90,19 +92,23 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <ClerkThemeProvider>
-            <Preloader />
-            <Navbar />
-            <main className="flex-1 flex flex-col">{children}</main>
+            <LenisProvider>
+              <div className="min-h-screen flex flex-col">
+                <Preloader />
+                <Navbar />
+                <main className="flex-1 flex flex-col">{children}</main>
+              </div>
 
-            <Toaster
-              position="bottom-right"
-              richColors
-              closeButton
-              toastOptions={{
-                className:
-                  "font-sans border border-zinc-200 dark:border-white/10 shadow-xl rounded-xl",
-              }}
-            />
+              <Toaster
+                position="bottom-right"
+                richColors
+                closeButton
+                toastOptions={{
+                  className:
+                    "font-sans border border-zinc-200 dark:border-white/10 shadow-xl rounded-xl",
+                }}
+              />
+            </LenisProvider>
           </ClerkThemeProvider>
         </ThemeProvider>
       </body>
